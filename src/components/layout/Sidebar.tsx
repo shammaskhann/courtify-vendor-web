@@ -4,7 +4,8 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { Logo } from '@/components/common/Logo'
-import { primaryNavigation, secondaryNavigation } from '@/config/navigation'
+import { primaryNavigation, secondaryNavigation, adminNavigation } from '@/config/navigation'
+import { useAuth } from '@/contexts/AuthContext'
 import { LogOut, ChevronLeft } from 'lucide-react'
 
 interface SidebarProps {
@@ -19,6 +20,9 @@ export function Sidebar({
   className,
 }: SidebarProps) {
   const pathname = usePathname()
+  const { user, logout } = useAuth()
+  
+  const navItems = user?.role === 'ADMIN' ? adminNavigation : primaryNavigation
 
   return (
     <aside
@@ -33,15 +37,21 @@ export function Sidebar({
       {/* Logo area */}
       <div className="flex items-center h-topbar px-4 border-b border-border shrink-0">
         {isCollapsed ? (
-          <Logo variant="mark" size="sm" />
+          <div className="flex flex-col items-center gap-1">
+            <Logo variant="mark" size="sm" />
+            {user?.role === 'ADMIN' && <span className="text-[10px] font-bold text-brand tracking-wider">ADMIN</span>}
+          </div>
         ) : (
-          <Logo variant="full" size="md" />
+          <div className="flex items-center gap-2">
+            <Logo variant="full" size="md" />
+            {user?.role === 'ADMIN' && <span className="badge badge-brand text-xs px-2 py-0.5">ADMIN</span>}
+          </div>
         )}
       </div>
 
       {/* Primary nav */}
       <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-1">
-        {primaryNavigation.map((item) => {
+        {navItems.map((item) => {
           const Icon = item.icon
           const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`)
 
@@ -132,6 +142,7 @@ export function Sidebar({
 
         {/* Sign out */}
         <button
+          onClick={logout}
           className={cn(
             'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg',
             'text-error hover:bg-error-bg',

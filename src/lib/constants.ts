@@ -12,6 +12,14 @@ export const ROUTES = {
   ANALYTICS: '/analytics',
   SETTINGS: '/settings',
   HELP: '/help',
+  // Admin Routes
+  ADMIN_DASHBOARD: '/admin/dashboard',
+  ADMIN_VENUES: '/admin/venues',
+  ADMIN_VENUE_DETAIL: (id: string) => `/admin/venues/${id}`,
+  ADMIN_COURTS: '/admin/courts',
+  ADMIN_USERS: '/admin/users',
+  ADMIN_BOOKINGS: '/admin/bookings',
+  ADMIN_COMMON: '/admin/common',
   // Auth
   LOGIN: '/login',
   REGISTER: '/register',

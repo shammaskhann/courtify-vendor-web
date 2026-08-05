@@ -69,6 +69,39 @@ export const primaryNavigation: NavItem[] = [
   },
 ]
 
+export const adminNavigation: NavItem[] = [
+  {
+    label: 'Dashboard',
+    href: '/admin/dashboard',
+    icon: LayoutDashboard,
+  },
+  {
+    label: 'Venues',
+    href: '/admin/venues',
+    icon: Building2,
+  },
+  {
+    label: 'Courts',
+    href: '/admin/courts',
+    icon: Layers,
+  },
+  {
+    label: 'Users',
+    href: '/admin/users',
+    icon: Users,
+  },
+  {
+    label: 'Bookings',
+    href: '/admin/bookings',
+    icon: CalendarDays,
+  },
+  {
+    label: 'Common Settings',
+    href: '/admin/common',
+    icon: Settings,
+  },
+]
+
 export const secondaryNavigation: NavItem[] = [
   {
     label: 'Settings',

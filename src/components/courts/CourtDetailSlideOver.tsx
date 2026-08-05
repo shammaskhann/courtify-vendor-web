@@ -83,7 +83,7 @@ export function CourtDetailSlideOver({ court, isOpen, onClose, onEdit, onDelete 
           ) : venue ? (
             <div className="bg-surface border border-border rounded-lg p-4">
               <div className="flex gap-3 mb-2">
-                <img src={venue.image} alt={venue.name} className="w-12 h-12 rounded object-cover" />
+                <img src={venue.venueImage || venue.image} alt={venue.name} className="w-12 h-12 rounded object-cover" />
                 <div>
                   <p className="font-medium text-primary">{venue.name}</p>
                   <p className="text-caption text-secondary">{venue.city}</p>

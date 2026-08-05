@@ -41,6 +41,7 @@ export function Logo({
         src={logoSrc}
         alt="Courtify Logo"
         fill
+        sizes="160px"
         className={cn('object-contain', variant === 'mark' && 'object-left')}
         priority
       />

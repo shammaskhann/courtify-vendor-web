@@ -14,9 +14,15 @@ export async function getDeals(params: {
   if (params.pageSize) query.append('pageSize', params.pageSize.toString())
 
   const endpoint = params.isActive === true ? '/court-owner/deals/active' : '/court-owner/deals'
-  const res = await api.get<PaginatedResponse<Deal>>(`${endpoint}?${query.toString()}`)
+  const res = await api.get<any>(`${endpoint}?${query.toString()}`)
   if (res.error) throw new Error(res.error)
-  return res.data as PaginatedResponse<Deal>
+  const data = res.data
+  return {
+    data: Array.isArray(data) ? data : data?.content || [],
+    total: Array.isArray(data) ? data.length : data?.totalElements || 0,
+    page: data?.page || params.page || 1,
+    pageSize: data?.size || params.pageSize || 10
+  }
 }
 
 export async function getDealById(id: string): Promise<Deal | null> {

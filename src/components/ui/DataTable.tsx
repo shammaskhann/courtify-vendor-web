@@ -9,6 +9,7 @@ export interface ColumnDef<T> {
   header: string
   key?: keyof T
   render?: (item: T) => React.ReactNode
+  accessor?: (item: T, index: number) => React.ReactNode
   sortable?: boolean
   width?: string
   align?: 'left' | 'center' | 'right'
@@ -35,7 +36,7 @@ interface DataTableProps<T> {
 }
 
 export function DataTable<T>({
-  data,
+  data = [],
   columns,
   isLoading = false,
   keyExtractor,
@@ -101,7 +102,7 @@ export function DataTable<T>({
                 </td>
               </tr>
             ) : (
-              data.map((item) => (
+              data.map((item, rowIndex) => (
                 <tr
                   key={keyExtractor(item)}
                   onClick={() => onRowClick?.(item)}
@@ -119,7 +120,7 @@ export function DataTable<T>({
                         col.align === 'center' && 'text-center'
                       )}
                     >
-                      {col.render ? col.render(item) : col.key ? (item[col.key] as React.ReactNode) : null}
+                      {col.render ? col.render(item) : col.accessor ? col.accessor(item, rowIndex) : col.key ? (item[col.key] as React.ReactNode) : null}
                     </td>
                   ))}
                 </tr>

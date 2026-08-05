@@ -22,10 +22,17 @@ export async function getBookings(params: {
     ? `/vendor-booking/venue/${params.venueId}` 
     : `/vendor-booking/${params.status || 'ALL'}`
     
-  const res = await api.get<PaginatedResponse<Booking>>(`${endpoint}?${query.toString()}`)
+  const res = await api.get<PaginatedResponse<Booking> | Booking[]>(`${endpoint}?${query.toString()}`)
   
   if (res.error) throw new Error(res.error)
-  return res.data as PaginatedResponse<Booking>
+  
+  const data = res.data
+  return {
+    data: Array.isArray(data) ? data : data?.content || [],
+    total: Array.isArray(data) ? data.length : data?.totalElements || 0,
+    page: data?.page || params.page || 1,
+    pageSize: data?.size || params.pageSize || 10
+  }
 }
 
 export async function getBookingsByStatus(status: BookingStatus): Promise<{ bookings: Booking[]; total: number }> {
@@ -38,7 +45,8 @@ export async function getBookingsByStatus(status: BookingStatus): Promise<{ book
   if (Array.isArray(res.data)) {
     return { bookings: res.data, total: res.data.length }
   } else if (res.data) {
-    return { bookings: res.data.data, total: res.data.total }
+    const data = res.data as any
+    return { bookings: data.content || data.data || [], total: data.totalElements || data.total || 0 }
   }
   return { bookings: [], total: 0 }
 }

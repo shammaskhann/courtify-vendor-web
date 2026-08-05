@@ -53,6 +53,7 @@ export interface Venue {
   openingTime: string
   closingTime: string
   image: string
+  venueImage?: string
   courtCount: number
   isActive: boolean
   createdAt: string
@@ -64,6 +65,7 @@ export interface Court {
   id: string
   venueId: string
   name: string
+  courtName?: string
   sportType: SportType[]
   openWeekdays: WeekDay[]
   isHalfHourSlot: boolean
@@ -105,6 +107,7 @@ export interface Booking {
   status: BookingStatus
   paymentStatus: PaymentStatus
   amount: number
+  totalAmount?: number
   dealApplied: string | null
   discountAmount: number | null
   qrToken: string
@@ -201,3 +204,38 @@ export interface PaginatedResponse<T> {
   page: number
   pageSize: number
 }
+
+// ---- Admin Specific ----
+
+export interface AdminUser {
+  id: number
+  name: string
+  email: string
+  role: 'ADMIN' | 'COURTOWNER' | 'PLAYER' | 'USER' | 'COURTMANAGER'
+  contactNo?: string
+  isDisabled: boolean
+  isApproved: boolean
+  isVerified: boolean
+}
+
+export interface AdminVenue {
+  id: number
+  courtOwnerId: number
+  businessName?: string
+  name: string
+  address: string
+  city: string
+  isApproved: boolean
+  isDisabled: boolean
+  createdAt: string
+  ownerName?: string
+  ownerEmail?: string
+  contactNo?: string
+  // Extend as needed
+}
+
+export interface CommonItem {
+  id: number
+  name: string
+}
+

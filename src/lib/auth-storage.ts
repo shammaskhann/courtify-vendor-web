@@ -1,6 +1,7 @@
 import Cookies from 'js-cookie'
 
 const TOKEN_KEY = 'courtify_vendor_token'
+const USER_KEY = 'courtify_vendor_user'
 
 /**
  * Storage decision:
@@ -30,4 +31,20 @@ export const authStorage = {
   clearToken: (): void => {
     Cookies.remove(TOKEN_KEY)
   },
+  
+  getUser: () => {
+    if (typeof window === 'undefined') return null
+    const userStr = localStorage.getItem(USER_KEY)
+    return userStr ? JSON.parse(userStr) : null
+  },
+  
+  setUser: (user: any): void => {
+    if (typeof window === 'undefined') return
+    localStorage.setItem(USER_KEY, JSON.stringify(user))
+  },
+  
+  clearUser: (): void => {
+    if (typeof window === 'undefined') return
+    localStorage.removeItem(USER_KEY)
+  }
 }

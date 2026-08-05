@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useState, useCallback, ReactNode 
 import { useRouter } from 'next/navigation'
 import { authStorage } from '@/lib/auth-storage'
 import { AuthStatus, VendorUser, JwtPayload } from '@/types/auth'
+import { api } from '@/lib/api-client'
 import { ROUTES } from '@/lib/constants'
 
 interface LoginCredentials {
@@ -45,6 +46,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Derived routing logic based on user state
   const getRouteForUser = (vendor: VendorUser) => {
+    if (vendor.role === 'ADMIN') return ROUTES.ADMIN_DASHBOARD
     if (!vendor.isVerified) return ROUTES.VERIFY_OTP
     if (!vendor.isApproved) return ROUTES.APPROVAL_PENDING
     return ROUTES.DASHBOARD
@@ -69,14 +71,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           throw new Error('Token expired')
         }
 
-        setUser(payload.vendor)
-        setStatus(
-          !payload.vendor.isVerified ? 'authenticated-pending-verification'
-          : !payload.vendor.isApproved ? 'authenticated-pending-approval'
-          : 'authenticated'
-        )
+        const storedUser = authStorage.getUser() as VendorUser | null
+        if (!storedUser) {
+          throw new Error('User not found in storage')
+        }
+
+        let newStatus: AuthStatus = 'authenticated'
+        if (storedUser.role !== 'ADMIN') {
+          newStatus = !storedUser.isVerified ? 'authenticated-pending-verification'
+            : !storedUser.isApproved ? 'authenticated-pending-approval'
+            : 'authenticated'
+        }
+        
+        setUser(storedUser)
+        setStatus(newStatus)
       } catch {
         authStorage.clearToken()
+        authStorage.clearUser()
         setUser(null)
         setStatus('unauthenticated')
       }
@@ -86,6 +97,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Listen for global 401 unauth events from api-client
     const handleUnauthorized = () => {
+      authStorage.clearUser()
       setUser(null)
       setStatus('unauthenticated')
       router.replace(ROUTES.LOGIN)
@@ -101,38 +113,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(true)
     setError(null)
     try {
-      // Mock API call
-      // const res = await api.post<{ token: string, user: VendorUser }>('/auth/login', credentials)
-      await new Promise(resolve => setTimeout(resolve, 800))
-      
-      // Simulate backend behavior
-      if (credentials.email === 'error@test.com') {
-        throw new Error('Invalid email or password')
-      }
-
-      // Create a mock token
-      const mockUser: VendorUser = {
-        id: '1',
-        name: 'Jane Doe',
-        email: credentials.email,
-        role: 'vendor',
-        isVerified: credentials.email !== 'unverified@test.com',
-        isApproved: credentials.email !== 'unapproved@test.com' && credentials.email !== 'unverified@test.com',
-        isProfileComplete: true,
+      const res = await api.post<{ token: string, user: VendorUser }>('/auth/login', credentials)
+      if (res.error) {
+        throw new Error(res.error)
       }
       
-      const payload: JwtPayload = { sub: mockUser.id, exp: Math.floor(Date.now() / 1000) + 86400, vendor: mockUser }
-      const token = `header.${Buffer.from(JSON.stringify(payload)).toString('base64')}.signature`
+      const { token, user: fetchedUser } = res.data!
       
       authStorage.setToken(token)
-      setUser(mockUser)
+      authStorage.setUser(fetchedUser)
+      setUser(fetchedUser)
       
-      const newStatus = !mockUser.isVerified ? 'authenticated-pending-verification'
-        : !mockUser.isApproved ? 'authenticated-pending-approval'
-        : 'authenticated'
+      let newStatus: AuthStatus = 'authenticated'
+      if (fetchedUser.role !== 'ADMIN') {
+        newStatus = !fetchedUser.isVerified ? 'authenticated-pending-verification'
+          : !fetchedUser.isApproved ? 'authenticated-pending-approval'
+          : 'authenticated'
+      }
         
       setStatus(newStatus)
-      router.push(getRouteForUser(mockUser))
+      router.push(getRouteForUser(fetchedUser))
     } catch (err) {
       const e = err as Error
       setError(e.message || 'Something went wrong on our end. Please try again shortly.')
@@ -207,6 +207,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // ignore
     } finally {
       authStorage.clearToken()
+      authStorage.clearUser()
       setUser(null)
       setStatus('unauthenticated')
       setIsLoading(false)

@@ -91,8 +91,7 @@ export default function CourtsPage() {
   }
 
   const handleRowClick = (court: Court) => {
-    setDetailCourt(court)
-    setIsDetailOpen(true)
+    router.push(`/courts/${court.id}`)
   }
 
   const handleDelete = (id: string) => {
@@ -145,7 +144,7 @@ export default function CourtsPage() {
       key: 'name',
       sortable: true,
       render: (court: Court) => (
-        <span className="font-medium text-primary">{court.name}</span>
+        <span className="font-medium text-primary">{court.name || court.courtName || 'Unknown Court'}</span>
       ),
     },
     {

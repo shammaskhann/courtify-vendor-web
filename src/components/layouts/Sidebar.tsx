@@ -7,6 +7,7 @@ import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { Logo } from '@/components/common/Logo'
 import { primaryNavigation, secondaryNavigation } from '@/config/navigation'
+import { useAuth } from '@/contexts/AuthContext'
 import { LogOut, ChevronLeft } from 'lucide-react'
 
 interface SidebarProps {
@@ -21,6 +22,7 @@ export function Sidebar({
     className,
 }: SidebarProps) {
     const pathname = usePathname()
+    const { logout } = useAuth()
 
     return (
         <aside
@@ -134,6 +136,7 @@ export function Sidebar({
 
                 {/* Sign out */}
                 <button
+                    onClick={logout}
                     className={cn(
                         'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg',
                         'text-error hover:bg-error-bg',

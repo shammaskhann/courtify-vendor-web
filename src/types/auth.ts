@@ -5,14 +5,18 @@ export type AuthStatus =
   | 'authenticated-pending-approval'
   | 'authenticated'
 
+export type UserRole = 'ADMIN' | 'COURTOWNER' | 'PLAYER' | 'USER' | 'COURTMANAGER'
+
 export interface VendorUser {
   id: string
   name: string
   email: string
-  role: 'vendor'
+  role: UserRole
   isVerified: boolean
   isApproved: boolean
   isProfileComplete: boolean
+  contactNo?: string
+  businessName?: string
 }
 
 export interface ApiResponse<T = unknown> {

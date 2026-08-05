@@ -14,9 +14,16 @@ export async function getCourts(params: {
   if (params.page) query.append('page', params.page.toString())
   if (params.pageSize) query.append('pageSize', params.pageSize.toString())
 
-  const res = await api.get<PaginatedResponse<Court>>(`/court-owner/courts/all?${query.toString()}`)
+  const res = await api.get<PaginatedResponse<Court> | Court[]>(`/court-owner/courts/all?${query.toString()}`)
   if (res.error) throw new Error(res.error)
-  return res.data as PaginatedResponse<Court>
+  
+  const data = res.data
+  return {
+    data: Array.isArray(data) ? data : data?.content || [],
+    total: Array.isArray(data) ? data.length : data?.totalElements || 0,
+    page: data?.page || params.page || 1,
+    pageSize: data?.size || params.pageSize || 10
+  }
 }
 
 export async function getCourtsByVenue(venueId: string, params: { page?: number; pageSize?: number } = {}): Promise<PaginatedResponse<Court>> {
@@ -24,9 +31,16 @@ export async function getCourtsByVenue(venueId: string, params: { page?: number;
   if (params.page) query.append('page', params.page.toString())
   if (params.pageSize) query.append('pageSize', params.pageSize.toString())
   
-  const res = await api.get<PaginatedResponse<Court>>(`/court-owner/courts/venues/${venueId}?${query.toString()}`)
+  const res = await api.get<PaginatedResponse<Court> | Court[]>(`/court-owner/courts/venues/${venueId}?${query.toString()}`)
   if (res.error) throw new Error(res.error)
-  return res.data as PaginatedResponse<Court>
+  
+  const data = res.data
+  return {
+    data: Array.isArray(data) ? data : data?.content || [],
+    total: Array.isArray(data) ? data.length : data?.totalElements || 0,
+    page: data?.page || params.page || 1,
+    pageSize: data?.size || params.pageSize || 10
+  }
 }
 
 export async function getCourtById(id: string): Promise<Court | null> {
@@ -51,7 +65,7 @@ export async function createCourt(venueId: string, data: Omit<Court, 'id' | 'ven
 }
 
 export async function updateCourt(venueId: string, courtId: string, data: Partial<Court>): Promise<Court> {
-  const res = await api.put<Court>(`/courts/court-owner/venues/${venueId}/courts/${courtId}`, data)
+  const res = await api.put<Court>(`/court-owner/courts/venues/${venueId}/court/${courtId}`, data)
   if (res.error) throw new Error(res.error)
   return res.data as Court
 }

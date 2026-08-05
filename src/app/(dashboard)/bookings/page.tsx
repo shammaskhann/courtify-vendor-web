@@ -129,7 +129,7 @@ export default function BookingsPage() {
       align: 'right' as const,
       render: (booking: Booking) => (
         <div className="flex flex-col items-end">
-          <span className="font-medium text-primary">PKR {booking.amount.toLocaleString()}</span>
+          <span className="font-medium text-primary">PKR {(booking.amount ?? booking.totalAmount ?? 0).toLocaleString()}</span>
           <StatusBadge status={booking.paymentStatus} className="mt-1 scale-90 origin-right" />
         </div>
       ),

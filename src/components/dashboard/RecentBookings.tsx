@@ -57,7 +57,7 @@ export function RecentBookings({ data, isLoading = false }: RecentBookingsProps)
                     <StatusBadge status={booking.status} />
                   </td>
                   <td className="p-4 pr-6 text-right">
-                    <span className="font-medium text-primary">PKR {booking.amount.toLocaleString()}</span>
+                    <span className="font-medium text-primary">PKR {(booking.amount ?? booking.totalAmount ?? 0).toLocaleString()}</span>
                   </td>
                 </tr>
               ))

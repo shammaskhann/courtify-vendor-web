@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { FilterBar } from '@/components/ui/FilterBar'
 import { VenueCard } from '@/components/venues/VenueCard'
@@ -15,14 +16,16 @@ import { LayoutGrid, List, Plus } from 'lucide-react'
 import { getVenues, createVenue, updateVenue, deleteVenue } from '@/lib/api/venueApi'
 import { CITY_OPTIONS } from '@/lib/mock/data/metadata'
 import type { Venue } from '@/types/models'
+import { ROUTES } from '@/lib/constants'
 
 
 export default function VenuesPage() {
+  const router = useRouter()
   const [venues, setVenues] = useState<Venue[]>([])
   const [total, setTotal] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid')
-  
+
   // Pagination & Filtering
   const [page, setPage] = useState(1)
   const [filters, setFilters] = useState<Record<string, any>>({})
@@ -242,6 +245,7 @@ export default function VenuesPage() {
           columns={columns}
           isLoading={isLoading}
           keyExtractor={(v) => v.id}
+          onRowClick={(v) => router.push(`${ROUTES.VENUES}/${v.id}`)}
           page={page}
           pageSize={pageSize}
           total={total}

@@ -103,7 +103,7 @@ export default function VenueDetailPage({ params }: { params: { id: string } }) 
           <StatusBadge status={venue.isActive ? 'ACTIVE' : 'INACTIVE'} />
         </div>
         <div className="md:w-1/3 h-48 md:h-auto relative">
-          <img src={venue.image} alt={venue.name} className="w-full h-full object-cover" />
+          <img src={venue.venueImage || venue.image} alt={venue.name} className="w-full h-full object-cover" />
         </div>
         <div className="p-6 md:w-2/3 flex flex-col">
           <h2 className="text-h3 font-semibold text-primary mb-2">{venue.name}</h2>

@@ -6,8 +6,10 @@ import { useAuth } from '@/contexts/AuthContext'
 import { PageLoader } from '@/components/common/PageLoader'
 import { ROUTES } from '@/lib/constants'
 
-export function AuthGuard({ children }: { children: React.ReactNode }) {
-  const { status } = useAuth()
+import { UserRole } from '@/types/auth'
+
+export function AuthGuard({ children, allowedRoles }: { children: React.ReactNode, allowedRoles?: UserRole[] }) {
+  const { status, user } = useAuth()
   const router = useRouter()
 
   useEffect(() => {
@@ -22,6 +24,13 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
 
   if (status === 'initializing' || status === 'unauthenticated' || status.includes('pending')) {
     return <PageLoader fullScreen message="Loading dashboard..." />
+  }
+
+  // Ensure user has the correct role
+  if (user && allowedRoles && !allowedRoles.includes(user.role)) {
+    // Navigate away if they don't have permission
+    router.replace(user.role === 'ADMIN' ? ROUTES.ADMIN_DASHBOARD : ROUTES.DASHBOARD)
+    return null
   }
 
   // authenticated

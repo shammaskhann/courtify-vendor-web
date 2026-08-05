@@ -17,7 +17,7 @@ export function VenueCard({ venue, onEdit, onDelete }: VenueCardProps) {
       {/* Image */}
       <div className="relative h-48 w-full bg-surface-variant overflow-hidden">
         <img
-          src={venue.image}
+          src={venue.venueImage || venue.image}
           alt={venue.name}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-slow"
           loading="lazy"

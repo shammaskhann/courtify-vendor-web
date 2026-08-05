@@ -25,7 +25,7 @@ const statusMap: Record<string, { label: string; className: string }> = {
 }
 
 export function StatusBadge({ status, className }: StatusBadgeProps) {
-  const normalizedStatus = status.toUpperCase()
+  const normalizedStatus = (status || '').toUpperCase()
   const config = statusMap[normalizedStatus] || {
     label: status,
     className: 'bg-surface-variant text-primary',

@@ -26,6 +26,7 @@ async function fetchClient<T>(
   const token = authStorage.getToken()
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
+    'ngrok-skip-browser-warning': 'true',
     ...(options.headers as Record<string, string> || {}),
   }
 
@@ -39,7 +40,8 @@ async function fetchClient<T>(
   }
 
   try {
-    const response = await fetch(`${BASE_URL}${endpoint}`, config)
+    const url = `${BASE_URL.replace(/\/+$/, '')}/${endpoint.replace(/^\/+/, '')}`
+    const response = await fetch(url, config)
     
     // Global 401 handler
     if (response.status === 401) {
