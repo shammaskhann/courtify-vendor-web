@@ -14,13 +14,14 @@ import { VenueForm } from '@/components/venues/VenueForm'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { LayoutGrid, List, Plus } from 'lucide-react'
 import { getVenues, createVenue, updateVenue, deleteVenue } from '@/lib/api/venueApi'
-import { CITY_OPTIONS } from '@/lib/mock/data/metadata'
+import { useMetadata } from '@/contexts/MetadataContext'
 import type { Venue } from '@/types/models'
 import { ROUTES } from '@/lib/constants'
 
 
 export default function VenuesPage() {
   const router = useRouter()
+  const { cities } = useMetadata()
   const [venues, setVenues] = useState<Venue[]>([])
   const [total, setTotal] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
@@ -111,7 +112,7 @@ export default function VenuesPage() {
       key: 'name',
       render: (venue: Venue) => (
         <div className="flex items-center gap-3">
-          <img src={venue.image} alt={venue.name} className="w-10 h-10 rounded-md object-cover" />
+          <img src={venue.venueImage || venue.image || 'https://picsum.photos/seed/newvenue/800/450'} alt={venue.name} className="w-10 h-10 rounded-md object-cover" />
           <div className="flex flex-col">
             <span className="font-medium text-primary">{venue.name}</span>
             <span className="text-caption text-secondary">{venue.city}</span>
@@ -121,9 +122,9 @@ export default function VenuesPage() {
     },
     {
       header: 'Status',
-      key: 'isActive',
+      // Removed key since it is not in keyof Venue
       render: (venue: Venue) => (
-        <StatusBadge status={venue.isActive ? 'ACTIVE' : 'INACTIVE'} />
+        <StatusBadge status={venue.isDisabled ? 'INACTIVE' : (venue.isApproved ? 'ACTIVE' : 'PENDING')} />
       ),
     },
     {
@@ -185,7 +186,7 @@ export default function VenuesPage() {
       <FilterBar
         configs={[
           { key: 'search', label: 'Search', type: 'search', placeholder: 'Search venues...' },
-          { key: 'city', label: 'City', type: 'select', options: CITY_OPTIONS.map(c => ({ label: c, value: c })) },
+          { key: 'city', label: 'City', type: 'select', options: cities.map(c => ({ label: c.name, value: c.name })) },
           { key: 'status', label: 'Status', type: 'select', options: [{ label: 'Active', value: 'ACTIVE' }, { label: 'Inactive', value: 'INACTIVE' }] },
         ]}
         onFilterChange={handleFilterChange}

@@ -4,11 +4,8 @@
 
 // ---- Enums ----
 
-export const SPORT_TYPES = [
-  'TENNIS', 'PADEL', 'BADMINTON', 'SQUASH', 'PICKLEBALL', 'BASKETBALL', 'FOOTBALL',
-] as const
-export type SportType = (typeof SPORT_TYPES)[number]
-
+// SportType is now sourced from the backend /common/sport-types API
+export type SportType = string
 export const WEEK_DAYS = [
   'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY',
 ] as const
@@ -55,7 +52,8 @@ export interface Venue {
   image: string
   venueImage?: string
   courtCount: number
-  isActive: boolean
+  isApproved: boolean
+  isDisabled: boolean
   createdAt: string
   updatedAt: string
   ownerId: string
@@ -90,28 +88,29 @@ export interface Court {
 }
 
 export interface Booking {
-  id: string
-  bookingReference: string
-  venueId: string
-  venueName: string
-  courtId: string
-  courtName: string
-  customerId: string
-  customerName: string
-  customerEmail: string
-  customerContact: string
+  id: string | number
+  bookingReference?: string
+  venueId: string | number
+  venueName?: string
+  courtId: string | number
+  courtName?: string
+  userId?: string | number
+  customerId?: string | number
+  customerName?: string
+  customerEmail?: string
+  customerContact?: string
   bookingDate: string
   startTime: string
   endTime: string
-  durationMinutes: number
+  durationMinutes?: number
   status: BookingStatus
   paymentStatus: PaymentStatus
-  amount: number
+  amount?: number
   totalAmount?: number
-  dealApplied: string | null
-  discountAmount: number | null
-  qrToken: string
-  notes: string | null
+  dealApplied?: string | null
+  discountAmount?: number | null
+  qrToken?: string
+  notes?: string | null
   createdAt: string
   updatedAt: string
 }

@@ -41,9 +41,9 @@ export default function AdminBookingsPage() {
     const q = search.toLowerCase()
     if (!q) return true
     return (
-      b.bookingReference.toLowerCase().includes(q) ||
-      b.customerName.toLowerCase().includes(q) ||
-      b.courtName.toLowerCase().includes(q)
+      b.bookingReference?.toLowerCase().includes(q) ||
+      b.customerName?.toLowerCase().includes(q) ||
+      b.courtName?.toLowerCase().includes(q)
     )
   })
 
@@ -92,7 +92,7 @@ export default function AdminBookingsPage() {
       align: 'right' as const,
       render: (booking: Booking) => (
         <div className="flex flex-col items-end">
-          <span className="font-medium text-primary">PKR {booking.amount.toLocaleString()}</span>
+          <span className="font-medium text-primary">PKR {(booking.amount ?? booking.totalAmount ?? 0).toLocaleString()}</span>
           <StatusBadge status={booking.paymentStatus} className="mt-1 scale-90 origin-right" />
         </div>
       ),

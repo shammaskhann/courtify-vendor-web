@@ -44,7 +44,7 @@ function VerifyOtpContent() {
   const handleComplete = async (completedCode: string) => {
     if (error) clearError()
     try {
-      await verifyOtp(completedCode)
+      await verifyOtp(email, completedCode)
     } catch {
       setCode('') // Clear inputs on error
     }

@@ -52,11 +52,7 @@ export const primaryNavigation: NavItem[] = [
     href: '/deals',
     icon: Tag,
   },
-  {
-    label: 'Customers',
-    href: '/customers',
-    icon: Users,
-  },
+
   {
     label: 'Notifications',
     href: '/notifications',

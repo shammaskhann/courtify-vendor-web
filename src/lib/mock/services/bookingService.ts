@@ -19,7 +19,7 @@ export async function getBookings(params: {
   if (search) {
     const q = search.toLowerCase()
     filtered = filtered.filter(b =>
-      b.customerName.toLowerCase().includes(q) || b.bookingReference.toLowerCase().includes(q) || b.courtName.toLowerCase().includes(q)
+      b.customerName?.toLowerCase().includes(q) || b.bookingReference?.toLowerCase().includes(q) || b.courtName?.toLowerCase().includes(q)
     )
   }
   if (startDate) filtered = filtered.filter(b => b.bookingDate >= startDate)

@@ -19,6 +19,8 @@ interface RegisterData {
   password?: string
   lat?: number
   lng?: number
+  address?: string
+  city?: string
 }
 
 interface AuthContextValue {
@@ -28,7 +30,7 @@ interface AuthContextValue {
   error: string | null
   login: (credentials: LoginCredentials) => Promise<void>
   register: (data: RegisterData) => Promise<void>
-  verifyOtp: (code: string) => Promise<void>
+  verifyOtp: (email: string, code: string) => Promise<void>
   resendOtp: (email: string) => Promise<void>
   logout: () => Promise<void>
   clearError: () => void
@@ -135,7 +137,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       router.push(getRouteForUser(fetchedUser))
     } catch (err) {
       const e = err as Error
-      setError(e.message || 'Something went wrong on our end. Please try again shortly.')
+      const errorMessage = e.message || 'Something went wrong on our end. Please try again shortly.'
+      setError(errorMessage)
+      
+      // Redirect to OTP verification if the user needs to verify their account
+      if (errorMessage.includes('Kindly Verify Account') || errorMessage.includes('OTP has been send')) {
+        router.push(`${ROUTES.VERIFY_OTP}?email=${encodeURIComponent(credentials.email)}`)
+      }
     } finally {
       setIsLoading(false)
     }
@@ -145,9 +153,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(true)
     setError(null)
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      if (data.email === 'exists@test.com') {
-        throw new Error('This email is already registered. Please log in.')
+      const payload = {
+        buissnessName: data.name,
+        businessName: data.name,
+        email: data.email,
+        contactNo: data.phone,
+        password: data.password,
+        address: data.address || '',
+        city: data.city || '',
+        coordinates: {
+          lat: data.lat || 0,
+          lng: data.lng || 0
+        }
+      }
+      const res = await api.post<null>('/auth/vendor/signup', payload)
+      if (res.error) {
+        throw new Error(res.error)
       }
       // On success, we navigate to verify OTP without logging them in fully
       router.push(`${ROUTES.VERIFY_OTP}?email=${encodeURIComponent(data.email)}`)
@@ -160,24 +181,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [router])
 
-  const verifyOtp = useCallback(async (code: string) => {
+  const verifyOtp = useCallback(async (email: string, code: string) => {
     setIsLoading(true)
     setError(null)
     try {
-      await new Promise(resolve => setTimeout(resolve, 800))
-      if (code !== '123456') {
-        throw new Error('Incorrect code. Please try again.')
+      const res = await api.post<{ status: string }>('/auth/vendor/verifyOtp', { email, code })
+      if (res.error) {
+        throw new Error(res.error)
       }
-      // Mock updating user
-      if (user) {
-        const updatedUser = { ...user, isVerified: true }
-        setUser(updatedUser)
-        // Refresh token in real app
-        
-        const newStatus = !updatedUser.isApproved ? 'authenticated-pending-approval' : 'authenticated'
-        setStatus(newStatus)
-        router.push(getRouteForUser(updatedUser))
-      }
+      
+      // On success, send to login page to login again as per requirements
+      router.push(ROUTES.LOGIN)
     } catch (err) {
       const e = err as Error
       setError(e.message || 'Verification failed.')
@@ -185,13 +199,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsLoading(false)
     }
-  }, [router, user])
+  }, [router])
 
-  const resendOtp = useCallback(async () => {
+  const resendOtp = useCallback(async (email: string) => {
     setError(null)
     try {
-      await new Promise(resolve => setTimeout(resolve, 500))
-      // success silently
+      const res = await api.post<{ status: string }>('/auth/vendor/resendOtp', { email })
+      if (res.error) {
+        throw new Error(res.error)
+      }
     } catch (err) {
       const e = err as Error
       setError(e.message || 'Failed to resend code.')

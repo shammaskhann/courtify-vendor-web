@@ -25,9 +25,18 @@ async function fetchClient<T>(
 ): Promise<ApiResponse<T>> {
   const token = authStorage.getToken()
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
     'ngrok-skip-browser-warning': 'true',
     ...(options.headers as Record<string, string> || {}),
+  }
+
+  // Only set application/json if Content-Type isn't explicitly overridden and it's not a FormData request
+  if (!headers['Content-Type'] && !(options.body instanceof FormData)) {
+    headers['Content-Type'] = 'application/json'
+  }
+  
+  // If Content-Type is explicitly set to null/undefined or it's FormData, let the browser handle it (e.g. for boundaries)
+  if (options.body instanceof FormData || headers['Content-Type'] === 'multipart/form-data') {
+    delete headers['Content-Type']
   }
 
   if (token) {
@@ -89,10 +98,25 @@ export const api = {
     fetchClient<T>(endpoint, { ...options, method: 'GET' }),
     
   post: <T>(endpoint: string, body: unknown, options?: RequestInit) =>
-    fetchClient<T>(endpoint, { ...options, method: 'POST', body: JSON.stringify(body) }),
+    fetchClient<T>(endpoint, { 
+      ...options, 
+      method: 'POST', 
+      body: body instanceof FormData ? body : JSON.stringify(body) 
+    }),
     
   put: <T>(endpoint: string, body: unknown, options?: RequestInit) =>
-    fetchClient<T>(endpoint, { ...options, method: 'PUT', body: JSON.stringify(body) }),
+    fetchClient<T>(endpoint, { 
+      ...options, 
+      method: 'PUT', 
+      body: body instanceof FormData ? body : JSON.stringify(body) 
+    }),
+    
+  patch: <T>(endpoint: string, body: unknown, options?: RequestInit) =>
+    fetchClient<T>(endpoint, { 
+      ...options, 
+      method: 'PATCH', 
+      body: body instanceof FormData ? body : JSON.stringify(body) 
+    }),
     
   delete: <T>(endpoint: string, options?: RequestInit) =>
     fetchClient<T>(endpoint, { ...options, method: 'DELETE' }),

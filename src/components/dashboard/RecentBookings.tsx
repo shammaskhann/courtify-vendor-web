@@ -41,13 +41,13 @@ export function RecentBookings({ data, isLoading = false }: RecentBookingsProps)
                 <tr key={booking.id} className="hover:bg-surface-variant/50 transition-colors">
                   <td className="p-4 pl-6">
                     <div className="flex flex-col">
-                      <span className="font-medium text-primary">{booking.customerName}</span>
-                      <span className="text-caption text-secondary sm:hidden mt-0.5">{booking.bookingReference}</span>
+                      <span className="font-medium text-primary">{booking.customerName || `User #${booking.userId || booking.customerId || 'Unknown'}`}</span>
+                      <span className="text-caption text-secondary sm:hidden mt-0.5">{booking.bookingReference || `Ref: ${booking.id}`}</span>
                     </div>
                   </td>
                   <td className="p-4">
                     <div className="flex flex-col">
-                      <span className="text-body-sm font-medium text-primary">{booking.courtName}</span>
+                      <span className="text-body-sm font-medium text-primary">{booking.courtName || `Court #${booking.courtId || 'Unknown'}`}</span>
                       <span className="text-caption text-secondary">
                         {new Date(booking.bookingDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} · {booking.startTime}
                       </span>

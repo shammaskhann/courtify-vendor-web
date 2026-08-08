@@ -6,7 +6,7 @@ import { FilterBar } from '@/components/ui/FilterBar'
 import { DataTable } from '@/components/ui/DataTable'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { BookingDetailSlideOver } from '@/components/bookings/BookingDetailSlideOver'
-import { getBookings } from '@/lib/api/bookingApi'
+import { getBookings, updateBookingStatus } from '@/lib/api/bookingApi'
 import { getVenues } from '@/lib/api/venueApi'
 import type { Booking, Venue } from '@/types/models'
 import { PAYMENT_STATUSES } from '@/types/models'
@@ -33,6 +33,22 @@ export default function BookingsPage() {
   // Details SlideOver
   const [detailBooking, setDetailBooking] = useState<Booking | null>(null)
   const [isDetailOpen, setIsDetailOpen] = useState(false)
+
+  // Quick Actions
+  const [updatingId, setUpdatingId] = useState<string | number | null>(null)
+
+  const handleQuickStatusChange = async (e: React.MouseEvent, id: string | number, newStatus: Booking['status']) => {
+    e.stopPropagation()
+    try {
+      setUpdatingId(id)
+      await updateBookingStatus(id, newStatus)
+      await fetchData()
+    } catch (error) {
+      console.error('Failed to update booking status:', error)
+    } finally {
+      setUpdatingId(null)
+    }
+  }
 
   const fetchData = async () => {
     try {
@@ -97,8 +113,8 @@ export default function BookingsPage() {
       header: 'Customer',
       render: (booking: Booking) => (
         <div className="flex flex-col">
-          <span className="font-medium text-primary">{booking.customerName}</span>
-          <span className="text-caption text-secondary">{booking.customerContact}</span>
+          <span className="font-medium text-primary">{booking.customerName || `User #${booking.userId || booking.customerId || 'Unknown'}`}</span>
+          <span className="text-caption text-secondary">{booking.customerContact || 'N/A'}</span>
         </div>
       ),
     },
@@ -106,8 +122,8 @@ export default function BookingsPage() {
       header: 'Venue & Court',
       render: (booking: Booking) => (
         <div className="flex flex-col">
-          <span className="font-medium text-primary">{booking.venueName}</span>
-          <span className="text-caption text-secondary">{booking.courtName}</span>
+          <span className="font-medium text-primary">{booking.venueName || `Venue #${booking.venueId || 'Unknown'}`}</span>
+          <span className="text-caption text-secondary">{booking.courtName || `Court #${booking.courtId || 'Unknown'}`}</span>
         </div>
       ),
     },
@@ -138,8 +154,50 @@ export default function BookingsPage() {
       header: 'Status',
       align: 'right' as const,
       render: (booking: Booking) => (
-        <StatusBadge status={booking.status} />
+        <div className="flex flex-col items-end gap-2">
+          <StatusBadge status={booking.status} />
+        </div>
       ),
+    },
+    {
+      header: '', // Actions
+      align: 'right' as const,
+      render: (booking: Booking) => {
+        if (booking.status === 'PENDING') {
+          return (
+            <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+              <button
+                onClick={(e) => handleQuickStatusChange(e, booking.id, 'REJECTED')}
+                disabled={updatingId === booking.id}
+                className="px-2 py-1 text-[11px] font-medium text-error hover:bg-error-bg rounded"
+              >
+                Reject
+              </button>
+              <button
+                onClick={(e) => handleQuickStatusChange(e, booking.id, 'CONFIRMED')}
+                disabled={updatingId === booking.id}
+                className="px-2 py-1 text-[11px] font-medium bg-brand text-white hover:bg-brand-hover rounded"
+              >
+                Confirm
+              </button>
+            </div>
+          )
+        }
+        if (booking.status === 'CONFIRMED') {
+          return (
+            <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+              <button
+                onClick={(e) => handleQuickStatusChange(e, booking.id, 'COMPLETED')}
+                disabled={updatingId === booking.id}
+                className="px-2 py-1 text-[11px] font-medium bg-success text-white hover:bg-success/90 rounded"
+              >
+                Mark Complete
+              </button>
+            </div>
+          )
+        }
+        return null
+      },
     },
   ]
 
@@ -193,7 +251,7 @@ export default function BookingsPage() {
             data={bookings}
             columns={columns}
             isLoading={isLoading}
-            keyExtractor={(b) => b.id}
+            keyExtractor={(b) => String(b.id)}
             onRowClick={handleRowClick}
             page={page}
             pageSize={pageSize}

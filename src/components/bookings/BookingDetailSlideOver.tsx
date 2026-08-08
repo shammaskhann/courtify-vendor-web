@@ -95,13 +95,13 @@ export function BookingDetailSlideOver({ booking, isOpen, onClose, onStatusChang
             <div className="p-3 flex items-start gap-3">
               <Building2 size={18} className="text-brand shrink-0 mt-0.5" />
               <div>
-                <p className="text-body-sm font-medium text-primary">{booking.venueName}</p>
+                <p className="text-body-sm font-medium text-primary">{booking.venueName || `Venue #${booking.venueId || 'Unknown'}`}</p>
               </div>
             </div>
             <div className="p-3 flex items-start gap-3">
               <MapPin size={18} className="text-brand shrink-0 mt-0.5" />
               <div>
-                <p className="text-body-sm font-medium text-primary">{booking.courtName}</p>
+                <p className="text-body-sm font-medium text-primary">{booking.courtName || `Court #${booking.courtId || 'Unknown'}`}</p>
               </div>
             </div>
           </div>
@@ -113,23 +113,31 @@ export function BookingDetailSlideOver({ booking, isOpen, onClose, onStatusChang
             <div className="p-3 flex items-start gap-3">
               <User size={18} className="text-secondary shrink-0 mt-0.5" />
               <div>
-                <p className="text-body-sm font-medium text-primary">{booking.customerName}</p>
+                <p className="text-body-sm font-medium text-primary">{booking.customerName || `User #${booking.userId || booking.customerId || 'Unknown'}`}</p>
               </div>
             </div>
             <div className="p-3 flex items-start gap-3">
               <Mail size={18} className="text-secondary shrink-0 mt-0.5" />
               <div>
-                <a href={`mailto:${booking.customerEmail}`} className="text-body-sm text-brand hover:underline">
-                  {booking.customerEmail}
-                </a>
+                {booking.customerEmail ? (
+                  <a href={`mailto:${booking.customerEmail}`} className="text-body-sm text-brand hover:underline">
+                    {booking.customerEmail}
+                  </a>
+                ) : (
+                  <span className="text-body-sm text-secondary">N/A</span>
+                )}
               </div>
             </div>
             <div className="p-3 flex items-start gap-3">
               <Phone size={18} className="text-secondary shrink-0 mt-0.5" />
               <div>
-                <a href={`tel:${booking.customerContact}`} className="text-body-sm text-brand hover:underline">
-                  {booking.customerContact}
-                </a>
+                {booking.customerContact ? (
+                  <a href={`tel:${booking.customerContact}`} className="text-body-sm text-brand hover:underline">
+                    {booking.customerContact}
+                  </a>
+                ) : (
+                  <span className="text-body-sm text-secondary">N/A</span>
+                )}
               </div>
             </div>
           </div>
@@ -140,7 +148,7 @@ export function BookingDetailSlideOver({ booking, isOpen, onClose, onStatusChang
           <div className="bg-surface border border-border rounded-lg p-4 space-y-2">
             <div className="flex justify-between text-body-sm">
               <span className="text-secondary">Subtotal</span>
-              <span className="font-medium">PKR {(booking.amount + (booking.discountAmount || 0)).toLocaleString()}</span>
+              <span className="font-medium">PKR {((booking.amount ?? booking.totalAmount ?? 0) + (booking.discountAmount || 0)).toLocaleString()}</span>
             </div>
             {booking.dealApplied && (
               <div className="flex justify-between text-body-sm text-success-text">
@@ -150,7 +158,7 @@ export function BookingDetailSlideOver({ booking, isOpen, onClose, onStatusChang
             )}
             <div className="pt-2 border-t border-border flex justify-between text-body font-semibold">
               <span className="text-primary">Total Amount</span>
-              <span className="text-brand">PKR {booking.amount.toLocaleString()}</span>
+              <span className="text-brand">PKR {(booking.amount ?? booking.totalAmount ?? 0).toLocaleString()}</span>
             </div>
           </div>
         </div>

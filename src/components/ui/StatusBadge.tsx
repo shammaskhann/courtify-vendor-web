@@ -7,7 +7,7 @@ interface StatusBadgeProps {
 
 const statusMap: Record<string, { label: string; className: string }> = {
   // Booking Statuses
-  PENDING: { label: 'Pending', className: 'bg-warning-bg text-warning-text' },
+  PENDING: { label: 'Pending', className: 'bg-brand text-white' },
   CONFIRMED: { label: 'Confirmed', className: 'bg-info-bg text-info-text' },
   COMPLETED: { label: 'Completed', className: 'bg-success-bg text-success-text' },
   REJECTED: { label: 'Rejected', className: 'bg-error-bg text-error-text' },

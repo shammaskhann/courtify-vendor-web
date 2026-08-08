@@ -2,11 +2,28 @@ import { api } from '@/lib/api-client'
 import type { Venue, PaginatedResponse } from '@/types/models'
 
 export async function getVenues(params: {
-  search?: string; city?: string; page?: number; pageSize?: number
+  search?: string; city?: string; status?: string; page?: number; pageSize?: number
 } = {}): Promise<PaginatedResponse<Venue>> {
   const query = new URLSearchParams()
-  if (params.search) query.append('search', params.search)
-  if (params.city) query.append('city', params.city)
+  
+  const hasFilters = !!(params.search || params.city || params.status)
+
+  if (hasFilters) {
+    if (params.search) query.append('name', params.search)
+    if (params.city) query.append('city', params.city)
+    if (params.status) query.append('status', params.status)
+      
+    const res = await api.get<Venue[]>(`/court-owner/venues/search?${query.toString()}`)
+    if (res.error) throw new Error(res.error)
+    
+    return {
+      data: res.data || [],
+      total: res.data?.length || 0,
+      page: 1,
+      pageSize: res.data?.length || 10
+    }
+  }
+
   if (params.page) query.append('page', params.page.toString())
   if (params.pageSize) query.append('pageSize', params.pageSize.toString())
 
@@ -15,10 +32,10 @@ export async function getVenues(params: {
   
   const data = res.data
   return {
-    data: Array.isArray(data) ? data : data?.content || [],
-    total: Array.isArray(data) ? data.length : data?.totalElements || 0,
-    page: data?.page || params.page || 1,
-    pageSize: data?.size || params.pageSize || 10
+    data: Array.isArray(data) ? data : (data as any)?.content || [],
+    total: Array.isArray(data) ? data.length : (data as any)?.totalElements || 0,
+    page: (data as any)?.page || params.page || 1,
+    pageSize: (data as any)?.size || params.pageSize || 10
   }
 }
 
@@ -38,7 +55,7 @@ export async function createVenue(data: Omit<Venue, 'id' | 'courtCount' | 'creat
 }
 
 export async function updateVenue(id: string, data: Partial<Venue>): Promise<Venue> {
-  const res = await api.put<Venue>(`/court-owner/venues/my/${id}`, data)
+  const res = await api.patch<Venue>(`/court-owner/venues/my/${id}`, data)
   if (res.error) throw new Error(res.error)
   return res.data as Venue
 }

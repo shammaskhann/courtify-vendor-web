@@ -100,7 +100,7 @@ export default function VenueDetailPage({ params }: { params: { id: string } }) 
       {/* Hero Section */}
       <div className="bg-surface border border-border rounded-xl overflow-hidden shadow-sm flex flex-col md:flex-row relative">
         <div className="absolute top-4 right-4 z-10">
-          <StatusBadge status={venue.isActive ? 'ACTIVE' : 'INACTIVE'} />
+          <StatusBadge status={venue.isDisabled ? 'INACTIVE' : (venue.isApproved ? 'ACTIVE' : 'PENDING')} />
         </div>
         <div className="md:w-1/3 h-48 md:h-auto relative">
           <img src={venue.venueImage || venue.image} alt={venue.name} className="w-full h-full object-cover" />
@@ -159,7 +159,7 @@ export default function VenueDetailPage({ params }: { params: { id: string } }) 
             className="border-0 rounded-none shadow-none"
             columns={[
               { header: 'Name', key: 'name', render: (c) => <span className="font-medium">{c.name}</span> },
-              { header: 'Sport', key: 'sportType' },
+              { header: 'Sport', render: (c) => Array.isArray(c.sportType) ? c.sportType.join(', ') : c.sportType },
               { header: 'Status', render: (c) => <StatusBadge status={!c.isDisabled ? 'ACTIVE' : 'INACTIVE'} /> },
             ]}
             keyExtractor={(c) => c.id}
@@ -184,7 +184,7 @@ export default function VenueDetailPage({ params }: { params: { id: string } }) 
               { header: 'Date', render: (b) => new Date(b.bookingDate).toLocaleDateString() },
               { header: 'Status', render: (b) => <StatusBadge status={b.status} /> },
             ]}
-            keyExtractor={(b) => b.id}
+            keyExtractor={(b) => String(b.id)}
             emptyStateTitle="No recent bookings"
             emptyStateDescription="This venue has no bookings yet."
           />

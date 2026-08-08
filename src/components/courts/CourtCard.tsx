@@ -1,30 +1,33 @@
 import Link from 'next/link'
-import { MapPin, Clock, Edit, Trash2 } from 'lucide-react'
+import { MapPin, DollarSign, Activity, Edit, Trash2 } from 'lucide-react'
 import { StatusBadge } from '../ui/StatusBadge'
 import { Button } from '../ui/Button'
 import { ROUTES } from '@/lib/constants'
-import type { Venue } from '@/types/models'
+import type { Court } from '@/types/models'
 
-interface VenueCardProps {
-  venue: Venue
+interface CourtCardProps {
+  court: Court
+  venueName?: string
   onEdit?: (id: string) => void
   onDelete?: (id: string) => void
 }
 
-export function VenueCard({ venue, onEdit, onDelete }: VenueCardProps) {
+export function CourtCard({ court, venueName, onEdit, onDelete }: CourtCardProps) {
+  const imageUrl = court.images?.[0] || 'https://images.unsplash.com/photo-1599586120429-48281b6f0ece?auto=format&fit=crop&q=80&w=600'
+  const sportTypes = Array.isArray(court.sportType) ? court.sportType : [court.sportType]
+
   return (
     <div className="bg-surface border border-border rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-base group flex flex-col h-full">
       {/* Image */}
       <div className="relative h-48 w-full bg-surface-variant overflow-hidden">
         <img
-          src={venue.venueImage || venue.image}
-          alt={venue.name}
+          src={imageUrl}
+          alt={court.name || court.courtName || 'Court'}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-slow"
           loading="lazy"
         />
         <div className="absolute top-4 right-4 flex gap-2">
-          <StatusBadge status={venue.isDisabled ? 'INACTIVE' : (venue.isApproved ? 'ACTIVE' : 'PENDING')} />
-
+          <StatusBadge status={!court.isDisabled ? 'ACTIVE' : 'INACTIVE'} />
         </div>
       </div>
 
@@ -32,35 +35,41 @@ export function VenueCard({ venue, onEdit, onDelete }: VenueCardProps) {
       <div className="p-5 flex-1 flex flex-col">
         <div className="flex justify-between items-start mb-2">
           <Link 
-            href={`${ROUTES.VENUES}/${venue.id}`}
+            href={`${ROUTES.COURTS}/${court.id}`}
             className="text-h4 font-semibold text-primary hover:text-brand transition-colors line-clamp-1"
-            title={venue.name}
+            title={court.name || court.courtName}
           >
-            {venue.name}
+            {court.name || court.courtName}
           </Link>
         </div>
         
         <div className="flex flex-col gap-2 mt-1 mb-4">
+          {venueName && (
+            <div className="flex items-center text-body-sm text-secondary">
+              <MapPin size={14} className="mr-1.5 shrink-0" />
+              <span className="truncate">{venueName}</span>
+            </div>
+          )}
           <div className="flex items-center text-body-sm text-secondary">
-            <MapPin size={14} className="mr-1.5 shrink-0" />
-            <span className="truncate">{venue.address}, {venue.city}</span>
+            <Activity size={14} className="mr-1.5 shrink-0" />
+            <span className="truncate">{sportTypes.join(', ')}</span>
           </div>
           <div className="flex items-center text-body-sm text-secondary">
-            <Clock size={14} className="mr-1.5 shrink-0" />
-            <span>{venue.openingTime} - {venue.closingTime}</span>
+            <DollarSign size={14} className="mr-1.5 shrink-0 text-success" />
+            <span className="font-medium text-primary">PKR {court.constantPriceOffPeak?.toLocaleString() || 0}</span> / hr
           </div>
         </div>
 
         <div className="mt-auto pt-4 border-t border-border flex items-center justify-between">
           <div className="flex gap-1.5 flex-wrap flex-1 overflow-hidden pr-2 h-6">
-            {venue.amenities.slice(0, 3).map((amenity) => (
-              <span key={amenity} className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-surface-variant text-secondary whitespace-nowrap">
-                {amenity}
+            {court.openWeekdays?.slice(0, 3).map((day) => (
+              <span key={day} className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-surface-variant text-secondary whitespace-nowrap capitalize">
+                {day.substring(0, 3).toLowerCase()}
               </span>
             ))}
-            {venue.amenities.length > 3 && (
+            {(court.openWeekdays?.length || 0) > 3 && (
               <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-surface-variant text-secondary">
-                +{venue.amenities.length - 3}
+                +{(court.openWeekdays?.length || 0) - 3}
               </span>
             )}
           </div>
@@ -71,8 +80,8 @@ export function VenueCard({ venue, onEdit, onDelete }: VenueCardProps) {
                 variant="ghost"
                 size="icon"
                 className="h-8 w-8 text-secondary hover:text-primary"
-                onClick={() => onEdit(venue.id)}
-                aria-label="Edit venue"
+                onClick={() => onEdit(court.id)}
+                aria-label="Edit court"
               >
                 <Edit size={16} />
               </Button>
@@ -82,8 +91,8 @@ export function VenueCard({ venue, onEdit, onDelete }: VenueCardProps) {
                 variant="ghost"
                 size="icon"
                 className="h-8 w-8 text-error hover:text-error hover:bg-error-bg"
-                onClick={() => onDelete(venue.id)}
-                aria-label="Delete venue"
+                onClick={() => onDelete(court.id)}
+                aria-label="Delete court"
               >
                 <Trash2 size={16} />
               </Button>

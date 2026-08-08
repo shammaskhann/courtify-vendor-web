@@ -184,6 +184,8 @@ export function RegistrationFlow() {
         password: formData.password,
         lat: formData.lat,
         lng: formData.lng,
+        address: formData.address,
+        city: formData.city,
       })
     } catch {
       // Error is handled by AuthContext and displayed below

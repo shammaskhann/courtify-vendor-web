@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import { inter } from '@/styles/fonts'
 import { ThemeProvider } from '@/components/providers/ThemeProvider'
+import { MetadataProvider } from '@/contexts/MetadataContext'
 import { AuthProvider } from '@/contexts/AuthContext'
 import { siteConfig } from '@/config/site'
 import '@/styles/globals.css'
@@ -35,9 +36,11 @@ export default function RootLayout({
       <head />
       <body className="min-h-screen bg-background font-sans antialiased">
         <ThemeProvider>
-          <AuthProvider>
-            {children}
-          </AuthProvider>
+          <MetadataProvider>
+            <AuthProvider>
+              {children}
+            </AuthProvider>
+          </MetadataProvider>
         </ThemeProvider>
       </body>
     </html>

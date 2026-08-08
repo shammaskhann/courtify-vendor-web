@@ -2,42 +2,39 @@ import { api } from '@/lib/api-client'
 import type { Booking, BookingStatus, PaymentStatus, PaginatedResponse } from '@/types/models'
 
 export async function getBookings(params: {
-  venueId?: string; status?: BookingStatus; search?: string;
+  venueId?: string; status?: BookingStatus | 'ALL'; search?: string;
   startDate?: string; endDate?: string; paymentStatus?: PaymentStatus;
   page?: number; pageSize?: number
 } = {}): Promise<PaginatedResponse<Booking>> {
   const query = new URLSearchParams()
-  if (params.venueId) query.append('venueId', params.venueId)
-  if (params.status) query.append('status', params.status)
-  if (params.search) query.append('search', params.search)
-  if (params.startDate) query.append('startDate', params.startDate)
-  if (params.endDate) query.append('endDate', params.endDate)
-  if (params.paymentStatus) query.append('paymentStatus', params.paymentStatus)
-  if (params.page) query.append('page', params.page.toString())
-  if (params.pageSize) query.append('pageSize', params.pageSize.toString())
+  if (params.search) query.append('keyword', params.search)
+  if (params.startDate) query.append('fromDate', params.startDate)
+  if (params.endDate) query.append('toDate', params.endDate)
 
-  // If venueId is provided, use the venue endpoint
-  // Otherwise use the status endpoint (defaulting to ALL if not provided)
-  const endpoint = params.venueId 
-    ? `/vendor-booking/venue/${params.venueId}` 
-    : `/vendor-booking/${params.status || 'ALL'}`
+  let endpoint = ''
+  if (params.venueId) {
+    endpoint = `/vendor-booking/venue/${params.venueId}`
+  } else {
+    const statusPath = params.status && params.status !== 'ALL' ? params.status : 'ALL'
+    endpoint = `/vendor-booking/${statusPath}`
+  }
     
   const res = await api.get<PaginatedResponse<Booking> | Booking[]>(`${endpoint}?${query.toString()}`)
   
   if (res.error) throw new Error(res.error)
   
   const data = res.data
+  // Ensure we mock pagination correctly if the backend returns a flat array
   return {
-    data: Array.isArray(data) ? data : data?.content || [],
-    total: Array.isArray(data) ? data.length : data?.totalElements || 0,
-    page: data?.page || params.page || 1,
-    pageSize: data?.size || params.pageSize || 10
+    data: Array.isArray(data) ? data : (data as any)?.content || [],
+    total: Array.isArray(data) ? data.length : (data as any)?.totalElements || 0,
+    page: (data as any)?.page || params.page || 1,
+    pageSize: (data as any)?.size || params.pageSize || 10
   }
 }
 
-export async function getBookingsByStatus(status: BookingStatus): Promise<{ bookings: Booking[]; total: number }> {
-  // Assuming backend returns an array or PaginatedResponse, mapping it here.
-  const endpoint = `/vendor-booking/${status.toLowerCase()}`
+export async function getBookingsByStatus(status: BookingStatus | 'ALL'): Promise<{ bookings: Booking[]; total: number }> {
+  const endpoint = `/vendor-booking/${status}`
   const res = await api.get<Booking[] | PaginatedResponse<Booking>>(endpoint)
   
   if (res.error) throw new Error(res.error)
@@ -51,7 +48,7 @@ export async function getBookingsByStatus(status: BookingStatus): Promise<{ book
   return { bookings: [], total: 0 }
 }
 
-export async function updateBookingStatus(bookingId: string, status: BookingStatus, note?: string): Promise<Booking> {
+export async function updateBookingStatus(bookingId: string | number, status: BookingStatus, note?: string): Promise<Booking> {
   const res = await api.put<Booking>(`/vendor-booking/${bookingId}/status`, { status, notes: note })
   if (res.error) throw new Error(res.error)
   return res.data as Booking

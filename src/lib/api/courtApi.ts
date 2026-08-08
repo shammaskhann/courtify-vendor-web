@@ -19,10 +19,10 @@ export async function getCourts(params: {
   
   const data = res.data
   return {
-    data: Array.isArray(data) ? data : data?.content || [],
-    total: Array.isArray(data) ? data.length : data?.totalElements || 0,
-    page: data?.page || params.page || 1,
-    pageSize: data?.size || params.pageSize || 10
+    data: Array.isArray(data) ? data : (data as any)?.content || [],
+    total: Array.isArray(data) ? data.length : (data as any)?.totalElements || 0,
+    page: (data as any)?.page || params.page || 1,
+    pageSize: (data as any)?.size || params.pageSize || 10
   }
 }
 
@@ -36,10 +36,10 @@ export async function getCourtsByVenue(venueId: string, params: { page?: number;
   
   const data = res.data
   return {
-    data: Array.isArray(data) ? data : data?.content || [],
-    total: Array.isArray(data) ? data.length : data?.totalElements || 0,
-    page: data?.page || params.page || 1,
-    pageSize: data?.size || params.pageSize || 10
+    data: Array.isArray(data) ? data : (data as any)?.content || [],
+    total: Array.isArray(data) ? data.length : (data as any)?.totalElements || 0,
+    page: (data as any)?.page || params.page || 1,
+    pageSize: (data as any)?.size || params.pageSize || 10
   }
 }
 
@@ -65,7 +65,7 @@ export async function createCourt(venueId: string, data: Omit<Court, 'id' | 'ven
 }
 
 export async function updateCourt(venueId: string, courtId: string, data: Partial<Court>): Promise<Court> {
-  const res = await api.put<Court>(`/court-owner/courts/venues/${venueId}/court/${courtId}`, data)
+  const res = await api.put<Court>(`/courts/court-owner/venues/${venueId}/courts/${courtId}`, data)
   if (res.error) throw new Error(res.error)
   return res.data as Court
 }
