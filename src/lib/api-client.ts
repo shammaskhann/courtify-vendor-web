@@ -1,7 +1,8 @@
 import { authStorage } from './auth-storage'
 import type { ApiResponse } from '@/types/auth'
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || '/api'
+const envBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || '/api'
+const BASE_URL = envBaseUrl.replace(/^["']|["']$/g, '')
 
 export class ApiError extends Error {
   public statusCode: number
