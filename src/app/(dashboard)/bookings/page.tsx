@@ -307,7 +307,9 @@ export default function BookingsPage() {
       ) : (
         <div className="bg-surface border border-border rounded-xl shadow-sm flex flex-col h-full">
           {/* Tabs */}
-          <div className="flex items-center overflow-x-auto border-b border-border hide-scrollbar">
+          {/* shrink-0: overflow-x-auto zeroes the flex item's automatic min-height,
+              which otherwise lets this row collapse inside the h-full column. */}
+          <div className="flex items-center shrink-0 overflow-x-auto border-b border-border hide-scrollbar">
             {tabs.map((tab) => (
               <button
                 key={tab.value}

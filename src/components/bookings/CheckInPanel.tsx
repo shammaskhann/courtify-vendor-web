@@ -20,9 +20,9 @@ interface BarcodeDetectorLike {
 type BarcodeDetectorCtor = new (options?: { formats: string[] }) => BarcodeDetectorLike
 
 /**
- * Chrome/Edge (desktop + Android) ship a native QR decoder. Where it's missing —
- * Safari, notably — the panel falls back to typing the reference by hand rather
- * than pulling in a scanning library.
+ * The Shape Detection API ships on Android, ChromeOS and macOS Chrome — but not
+ * Windows desktop, and not Safari. Where it's missing the panel falls back to
+ * typing the reference by hand rather than pulling in a scanning library.
  */
 function getBarcodeDetector(): BarcodeDetectorCtor | null {
   if (typeof window === 'undefined') return null
@@ -320,7 +320,8 @@ export function CheckInPanel({ isOpen, onClose, onCheckedIn }: CheckInPanelProps
 
               {!scannerSupported && (
                 <p className="text-caption text-tertiary text-center">
-                  Camera scanning isn&apos;t supported in this browser. Chrome or Edge enable it.
+                  Camera scanning isn&apos;t available on this device — enter the booking
+                  reference above instead. Scanning works on Android and macOS.
                 </p>
               )}
             </div>

@@ -1,7 +1,29 @@
 import { authStorage } from './auth-storage'
+import { siteConfig } from '@/config/site'
 import type { ApiResponse } from '@/types/auth'
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || '/api'
+// Single source of truth: NEXT_PUBLIC_API_BASE_URL when set (e.g. an ngrok
+// tunnel), otherwise the local backend on :4000.
+const BASE_URL = siteConfig.apiBaseUrl
+
+/**
+ * Readable fallback for error responses that carry no JSON body — a bare 403
+ * would otherwise surface as "An unexpected error occurred", which tells the
+ * vendor nothing about whether to sign in again or call support.
+ */
+function describeHttpError(status: number): string {
+  switch (status) {
+    case 400: return 'The request was rejected as invalid (400).'
+    case 401: return 'Your session has expired. Please sign in again (401).'
+    case 403: return 'Not authorised (403) — your session may have expired, or this account lacks access. Try signing in again.'
+    case 404: return 'That endpoint was not found on the server (404).'
+    case 429: return 'Too many requests — please wait a moment and retry (429).'
+    default:
+      return status >= 500
+        ? `The server could not handle this request (${status}). This is a backend problem, not your connection.`
+        : `Request failed with status ${status}.`
+  }
+}
 
 export class ApiError extends Error {
   public statusCode: number
@@ -73,7 +95,7 @@ async function fetchClient<T>(
 
     if (!response.ok) {
       // Extract error message from known shapes or fallback
-      const errorMsg = data?.message || data?.error || 'An unexpected error occurred.'
+      const errorMsg = data?.message || data?.error || describeHttpError(response.status)
       return { data: null, error: errorMsg, statusCode: response.status }
     }
 

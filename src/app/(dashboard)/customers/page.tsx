@@ -226,7 +226,7 @@ export default function CustomersPage() {
       </div>
 
       <div className="bg-surface border border-border rounded-xl shadow-sm flex flex-col h-full">
-        <div className="flex items-center overflow-x-auto border-b border-border hide-scrollbar">
+        <div className="flex items-center shrink-0 overflow-x-auto border-b border-border hide-scrollbar">
           {SEGMENTS.map((tab) => (
             <button
               key={tab.value}

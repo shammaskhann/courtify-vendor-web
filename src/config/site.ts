@@ -9,7 +9,9 @@ export const siteConfig = {
   supportWhatsApp: process.env.NEXT_PUBLIC_SUPPORT_WHATSAPP ?? '',
   supportHours: process.env.NEXT_PUBLIC_SUPPORT_HOURS ?? '9:00 AM – 9:00 PM PKT, 7 days a week',
   baseUrl: process.env.NEXT_PUBLIC_BASE_URL ?? 'http://localhost:3000',
-  apiBaseUrl: process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:4000',
+  // `||` not `??`: an empty NEXT_PUBLIC_API_BASE_URL (as when the ngrok tunnel is
+  // down and the value is blanked out) must fall back to the local backend too.
+  apiBaseUrl: process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:4000/api',
 } as const
 
 export type SiteConfig = typeof siteConfig
