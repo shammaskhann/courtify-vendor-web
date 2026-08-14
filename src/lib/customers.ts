@@ -128,14 +128,17 @@ export function deriveCustomers(bookings: Booking[], now = new Date()): Customer
 export function toWhatsAppLink(contact?: string): string | null {
   if (!contact) return null
 
+  const isInternational = contact.trim().startsWith('+')
   const digits = contact.replace(/\D/g, '')
   if (digits.length < 10) return null
 
   let normalized = digits
-  if (normalized.startsWith('0')) {
-    normalized = `92${normalized.slice(1)}`
-  } else if (!normalized.startsWith('92')) {
-    normalized = `92${normalized}`
+  if (!isInternational) {
+    if (normalized.startsWith('0')) {
+      normalized = `92${normalized.slice(1)}`
+    } else if (!normalized.startsWith('92')) {
+      normalized = `92${normalized}`
+    }
   }
 
   return `https://wa.me/${normalized}`

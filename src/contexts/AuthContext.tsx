@@ -35,6 +35,7 @@ interface AuthContextValue {
   logout: () => Promise<void>
   clearError: () => void
   checkApprovalStatus: () => Promise<void>
+  updateSessionUser: (data: Partial<VendorUser>) => void
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined)
@@ -234,18 +235,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const checkApprovalStatus = useCallback(async () => {
     setIsLoading(true)
     try {
-      await new Promise(resolve => setTimeout(resolve, 800))
-      // Mock logic: randomly approve
-      if (Math.random() > 0.5 && user) {
+      const res = await api.get<{ isApproved?: boolean }>('/auth/me')
+      if (res.error) {
+        throw new Error(res.error)
+      }
+      
+      if (res.data?.isApproved && user) {
         const updatedUser = { ...user, isApproved: true }
         setUser(updatedUser)
         setStatus('authenticated')
         router.push(ROUTES.DASHBOARD)
       }
+    } catch (err) {
+      console.warn('Approval check failed', err)
     } finally {
       setIsLoading(false)
     }
   }, [user, router])
+
+  const updateSessionUser = useCallback((data: Partial<VendorUser>) => {
+    setUser((prev) => {
+      if (!prev) return prev
+      const updated = { ...prev, ...data }
+      authStorage.setUser(updated)
+      return updated
+    })
+  }, [])
 
   const value = {
     user,
@@ -258,7 +273,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     resendOtp,
     logout,
     clearError,
-    checkApprovalStatus
+    checkApprovalStatus,
+    updateSessionUser
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

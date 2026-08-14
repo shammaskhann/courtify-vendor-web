@@ -9,36 +9,36 @@ import { api } from '@/lib/api-client'
  */
 
 export interface VendorProfileInput {
-  businessName: string
-  supportEmail: string
-  contactNo: string
-  registrationNumber?: string
-  website?: string
+  name: string
+  isNotificationsEnabled: boolean
+}
+
+export interface UserProfile {
+  id: number
+  name: string
+  email: string
+  contact: string
+  isNotificationsEnabled: boolean
+  role: string
+}
+
+export async function getVendorProfile(): Promise<UserProfile> {
+  const res = await api.get<UserProfile>('/users/profile')
+  if (res.error) throw new Error(res.error)
+  return res.data as UserProfile
 }
 
 export async function updateVendorProfile(data: VendorProfileInput): Promise<void> {
-  const res = await api.patch('/court-owner/profile', data)
+  const res = await api.patch('/users/update', data)
   if (res.error) throw new Error(res.error)
 }
 
 export interface ChangePasswordInput {
-  currentPassword: string
+  oldPassword: string
   newPassword: string
 }
 
 export async function changePassword(data: ChangePasswordInput): Promise<void> {
-  const res = await api.post('/auth/change-password', data)
-  if (res.error) throw new Error(res.error)
-}
-
-export interface NotificationPreferences {
-  newBookings: boolean
-  cancellations: boolean
-  payments: boolean
-  marketing: boolean
-}
-
-export async function updateNotificationPreferences(data: NotificationPreferences): Promise<void> {
-  const res = await api.put('/court-owner/notification-preferences', data)
+  const res = await api.post('/auth/password/update', data)
   if (res.error) throw new Error(res.error)
 }

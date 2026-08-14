@@ -7,35 +7,33 @@ import { Button } from '@/components/ui/Button'
 import { useAuth } from '@/contexts/AuthContext'
 import { siteConfig } from '@/config/site'
 import {
+  getVendorProfile,
   updateVendorProfile,
   changePassword,
-  updateNotificationPreferences,
-  type NotificationPreferences,
+  type UserProfile
 } from '@/lib/api/settingsApi'
-import { Building2, Mail, Phone, Lock, CreditCard, Bell, Globe, CheckCircle2 } from 'lucide-react'
+import { Building2, Mail, Phone, Lock, CreditCard, CheckCircle2 } from 'lucide-react'
 
-type TabId = 'profile' | 'account' | 'notifications' | 'payments'
+type TabId = 'profile' | 'account' | 'payments'
 
 const TABS: { id: TabId; label: string; icon: typeof Building2 }[] = [
   { id: 'profile', label: 'Business Profile', icon: Building2 },
   { id: 'account', label: 'Account Security', icon: Lock },
-  { id: 'notifications', label: 'Notifications', icon: Bell },
   { id: 'payments', label: 'Payouts & Banking', icon: CreditCard },
 ]
 
 export default function SettingsPage() {
-  const { user } = useAuth()
+  const { updateSessionUser } = useAuth()
   const [activeTab, setActiveTab] = useState<TabId>('profile')
+  const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
 
-  const [profile, setProfile] = useState({
-    businessName: '',
-    registrationNumber: '',
-    supportEmail: '',
-    contactNo: '',
-    website: '',
+  const [profile, setProfile] = useState<UserProfile | null>(null)
+  const [formProfile, setFormProfile] = useState({
+    name: '',
+    isNotificationsEnabled: true,
   })
 
   const [passwords, setPasswords] = useState({
@@ -44,23 +42,34 @@ export default function SettingsPage() {
     confirmPassword: '',
   })
 
-  const [preferences, setPreferences] = useState<NotificationPreferences>({
-    newBookings: true,
-    cancellations: true,
-    payments: true,
-    marketing: false,
-  })
-
-  // Seed the form from the signed-in vendor rather than placeholder copy.
   useEffect(() => {
-    if (!user) return
-    setProfile((current) => ({
-      ...current,
-      businessName: user.businessName || user.name || '',
-      supportEmail: user.email || '',
-      contactNo: user.contactNo || '',
-    }))
-  }, [user])
+    let mounted = true
+    const fetchProfile = async () => {
+      try {
+        setIsLoading(true)
+        const data = await getVendorProfile()
+        if (mounted) {
+          setProfile(data)
+          setFormProfile({
+            name: data.name || '',
+            isNotificationsEnabled: data.isNotificationsEnabled,
+          })
+        }
+      } catch (err) {
+        if (mounted) {
+          console.error('Failed to fetch profile', err)
+          setError('Failed to load profile data.')
+        }
+      } finally {
+        if (mounted) {
+          setIsLoading(false)
+        }
+      }
+    }
+    
+    fetchProfile()
+    return () => { mounted = false }
+  }, [])
 
   const switchTab = (tab: TabId) => {
     setActiveTab(tab)
@@ -68,13 +77,26 @@ export default function SettingsPage() {
     setSuccess(null)
   }
 
-  const run = async (action: () => Promise<void>, successMessage: string) => {
+  const handleProfileSave = async (e: React.FormEvent) => {
+    e.preventDefault()
     setIsSaving(true)
     setError(null)
     setSuccess(null)
+    
     try {
-      await action()
-      setSuccess(successMessage)
+      await updateVendorProfile({
+        name: formProfile.name,
+        isNotificationsEnabled: formProfile.isNotificationsEnabled,
+      })
+      
+      const data = await getVendorProfile()
+      setProfile(data)
+      setFormProfile({
+        name: data.name || '',
+        isNotificationsEnabled: data.isNotificationsEnabled,
+      })
+      updateSessionUser({ name: data.name })
+      setSuccess('Business profile updated.')
     } catch (err) {
       setError((err as Error).message || 'Could not save your changes.')
     } finally {
@@ -82,41 +104,29 @@ export default function SettingsPage() {
     }
   }
 
-  const handleProfileSave = (e: React.FormEvent) => {
-    e.preventDefault()
-    run(
-      () => updateVendorProfile({
-        businessName: profile.businessName,
-        supportEmail: profile.supportEmail,
-        contactNo: profile.contactNo,
-        registrationNumber: profile.registrationNumber || undefined,
-        website: profile.website || undefined,
-      }),
-      'Business profile updated.'
-    )
-  }
-
-  const handlePasswordSave = (e: React.FormEvent) => {
+  const handlePasswordSave = async (e: React.FormEvent) => {
     e.preventDefault()
     if (passwords.newPassword !== passwords.confirmPassword) {
       setError('New passwords do not match.')
       return
     }
-    run(
-      async () => {
-        await changePassword({
-          currentPassword: passwords.currentPassword,
-          newPassword: passwords.newPassword,
-        })
-        setPasswords({ currentPassword: '', newPassword: '', confirmPassword: '' })
-      },
-      'Password updated.'
-    )
-  }
-
-  const handlePreferencesSave = (e: React.FormEvent) => {
-    e.preventDefault()
-    run(() => updateNotificationPreferences(preferences), 'Notification preferences saved.')
+    
+    setIsSaving(true)
+    setError(null)
+    setSuccess(null)
+    
+    try {
+      await changePassword({
+        oldPassword: passwords.currentPassword,
+        newPassword: passwords.newPassword,
+      })
+      setPasswords({ currentPassword: '', newPassword: '', confirmPassword: '' })
+      setSuccess('Password updated.')
+    } catch (err) {
+      setError((err as Error).message || 'Could not save your changes.')
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   const banner = (
@@ -173,53 +183,66 @@ export default function SettingsPage() {
             <form onSubmit={handleProfileSave} className="p-6 space-y-6">
               <div>
                 <h3 className="text-h4 font-semibold text-primary mb-1">Business Profile</h3>
-                <p className="text-body-sm text-secondary">Update your vendor details and contact information.</p>
+                <p className="text-body-sm text-secondary">Update your vendor details and preferences.</p>
               </div>
 
               {banner}
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
-                <Input
-                  label="Business Name"
-                  required
-                  value={profile.businessName}
-                  onChange={(e) => setProfile({ ...profile, businessName: e.target.value })}
-                />
-                <Input
-                  label="Business Registration Number"
-                  value={profile.registrationNumber}
-                  onChange={(e) => setProfile({ ...profile, registrationNumber: e.target.value })}
-                />
-                <Input
-                  label="Support Email"
-                  type="email"
-                  required
-                  value={profile.supportEmail}
-                  onChange={(e) => setProfile({ ...profile, supportEmail: e.target.value })}
-                  leftIcon={<Mail size={16} />}
-                />
-                <Input
-                  label="Support Phone"
-                  type="tel"
-                  required
-                  value={profile.contactNo}
-                  onChange={(e) => setProfile({ ...profile, contactNo: e.target.value })}
-                  leftIcon={<Phone size={16} />}
-                />
-                <div className="md:col-span-2">
-                  <Input
-                    label="Website"
-                    type="url"
-                    value={profile.website}
-                    onChange={(e) => setProfile({ ...profile, website: e.target.value })}
-                    leftIcon={<Globe size={16} />}
-                  />
-                </div>
-              </div>
+              {isLoading ? (
+                <div className="text-body-sm text-secondary py-4">Loading profile...</div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+                    <div className="md:col-span-2">
+                      <Input
+                        label="Business Name"
+                        required
+                        value={formProfile.name}
+                        onChange={(e) => setFormProfile({ ...formProfile, name: e.target.value })}
+                      />
+                    </div>
+                    <Input
+                      label="Support Email"
+                      type="email"
+                      value={profile?.email || ''}
+                      disabled
+                      leftIcon={<Mail size={16} />}
+                      helperText="Contact support to change your email."
+                    />
+                    <Input
+                      label="Support Phone"
+                      type="tel"
+                      value={profile?.contact || ''}
+                      disabled
+                      leftIcon={<Phone size={16} />}
+                      helperText="Contact support to change your phone number."
+                    />
+                  </div>
 
-              <div className="pt-6 border-t border-border flex justify-end">
-                <Button type="submit" isLoading={isSaving}>Save Changes</Button>
-              </div>
+                  <div className="pt-4 pb-2">
+                    <h4 className="text-body font-semibold text-primary mb-3">Notification Preferences</h4>
+                    <div className="flex items-start gap-3 p-3 rounded-lg border border-border bg-surface-variant/30">
+                      <input
+                        type="checkbox"
+                        id="isNotificationsEnabled"
+                        checked={formProfile.isNotificationsEnabled}
+                        onChange={(e) => setFormProfile({ ...formProfile, isNotificationsEnabled: e.target.checked })}
+                        className="mt-1 w-4 h-4 text-brand rounded border-border focus:ring-brand accent-brand"
+                      />
+                      <div>
+                        <label htmlFor="isNotificationsEnabled" className="text-body-sm font-medium text-primary block">
+                          Receive Email Notifications
+                        </label>
+                        <span className="text-caption text-secondary">Get notified when new bookings or cancellations happen.</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="pt-6 border-t border-border flex justify-end">
+                    <Button type="submit" isLoading={isSaving}>Save Changes</Button>
+                  </div>
+                </>
+              )}
             </form>
           )}
 
@@ -258,46 +281,6 @@ export default function SettingsPage() {
 
               <div className="pt-6 border-t border-border flex justify-end">
                 <Button type="submit" isLoading={isSaving}>Update Password</Button>
-              </div>
-            </form>
-          )}
-
-          {activeTab === 'notifications' && (
-            <form onSubmit={handlePreferencesSave} className="p-6 space-y-6">
-              <div>
-                <h3 className="text-h4 font-semibold text-primary mb-1">Notification Preferences</h3>
-                <p className="text-body-sm text-secondary">Choose what alerts you want to receive.</p>
-              </div>
-
-              {banner}
-
-              <div className="space-y-4 pt-2">
-                {([
-                  { key: 'newBookings', label: 'New Bookings', desc: 'Get notified when a new booking is made.' },
-                  { key: 'cancellations', label: 'Cancellations', desc: 'Get notified when a booking is cancelled.' },
-                  { key: 'payments', label: 'Payments', desc: 'Get notified for successful payouts.' },
-                  { key: 'marketing', label: 'Marketing', desc: 'Receive Courtify updates and offers.' },
-                ] as const).map((item) => (
-                  <div key={item.key} className="flex items-start gap-3 p-3 rounded-lg border border-border bg-surface-variant/30">
-                    <input
-                      type="checkbox"
-                      id={item.key}
-                      checked={preferences[item.key]}
-                      onChange={(e) => setPreferences({ ...preferences, [item.key]: e.target.checked })}
-                      className="mt-1 w-4 h-4 text-brand rounded border-border focus:ring-brand accent-brand"
-                    />
-                    <div>
-                      <label htmlFor={item.key} className="text-body-sm font-medium text-primary block">
-                        {item.label}
-                      </label>
-                      <span className="text-caption text-secondary">{item.desc}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="pt-6 border-t border-border flex justify-end">
-                <Button type="submit" isLoading={isSaving}>Save Preferences</Button>
               </div>
             </form>
           )}

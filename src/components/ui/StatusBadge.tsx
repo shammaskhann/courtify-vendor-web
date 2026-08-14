@@ -22,6 +22,13 @@ const statusMap: Record<string, { label: string; className: string }> = {
   ACTIVE: { label: 'Active', className: 'bg-success-bg text-success-text' },
   INACTIVE: { label: 'Inactive', className: 'bg-surface-variant text-secondary' },
   DRAFT: { label: 'Draft', className: 'bg-warning-bg text-warning-text' },
+  
+  // Marketplace Statuses
+  SOLD: { label: 'Sold', className: 'bg-info-bg text-info-text' },
+  SUSPENDED: { label: 'Suspended', className: 'bg-warning-bg text-warning-text' },
+  BANNED: { label: 'Banned', className: 'bg-error-bg text-error-text' },
+  RESOLVED: { label: 'Resolved', className: 'bg-success-bg text-success-text' },
+  DISMISSED: { label: 'Dismissed', className: 'bg-surface-variant text-secondary' },
 }
 
 export function StatusBadge({ status, className }: StatusBadgeProps) {

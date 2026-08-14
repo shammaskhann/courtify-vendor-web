@@ -171,13 +171,13 @@ export function ManualBookingForm({ isOpen, onClose, venues, onCreated }: Manual
           <Button variant="secondary" onClick={resetAndClose} className="mr-auto">
             Cancel
           </Button>
-          <Button variant="primary" onClick={handleSubmit} isLoading={isSubmitting}>
+          <Button type="submit" form="manual-booking-form" variant="primary" isLoading={isSubmitting}>
             Create booking
           </Button>
         </>
       }
     >
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form id="manual-booking-form" onSubmit={handleSubmit} className="space-y-6">
         {error && (
           <div className="p-3 rounded-lg bg-error/10 border border-error/20 text-error-text text-body-sm">
             {error}

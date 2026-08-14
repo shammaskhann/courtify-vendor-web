@@ -3,6 +3,8 @@ import { inter } from '@/styles/fonts'
 import { ThemeProvider } from '@/components/providers/ThemeProvider'
 import { MetadataProvider } from '@/contexts/MetadataContext'
 import { AuthProvider } from '@/contexts/AuthContext'
+import { QueryProvider } from '@/components/providers/QueryProvider'
+import { Toaster } from 'react-hot-toast'
 import { siteConfig } from '@/config/site'
 import '@/styles/globals.css'
 
@@ -37,9 +39,12 @@ export default function RootLayout({
       <body className="min-h-screen bg-background font-sans antialiased">
         <ThemeProvider>
           <MetadataProvider>
-            <AuthProvider>
-              {children}
-            </AuthProvider>
+            <QueryProvider>
+              <AuthProvider>
+                {children}
+                <Toaster position="top-right" />
+              </AuthProvider>
+            </QueryProvider>
           </MetadataProvider>
         </ThemeProvider>
       </body>

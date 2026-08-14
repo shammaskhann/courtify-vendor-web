@@ -10,6 +10,7 @@ import { ConfirmationModal } from '@/components/ui/ConfirmationModal'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { RefreshCw, CheckCircle, XCircle, RotateCcw, Eye } from 'lucide-react'
 import { getAdminVenues, getPendingVenues, approveVenue, disableVenue, enableVenue } from '@/lib/api/adminApi'
+import toast from 'react-hot-toast'
 import type { AdminVenue } from '@/types/models'
 import { ROUTES } from '@/lib/constants'
 
@@ -29,7 +30,7 @@ export default function AdminVenuesPage() {
       const resp = filter === 'PENDING' ? await getPendingVenues(0, 100) : await getAdminVenues(0, 100)
       setVenues(resp.data || [])
     } catch (err) {
-      console.error(String(err))
+      toast.error(err instanceof Error ? err.message : 'Failed to load venues')
       setVenues([])
     } finally {
       setLoading(false)
@@ -51,10 +52,11 @@ export default function AdminVenuesPage() {
       else if (confirm.action === 'DISABLE') await disableVenue(confirm.venue.id)
       else if (confirm.action === 'ENABLE') await enableVenue(confirm.venue.id)
       
+      toast.success(`Venue successfully ${confirm.action.toLowerCase()}d!`)
       setConfirm({ open: false })
       fetchVenues()
     } catch (err) {
-      console.error(String(err))
+      toast.error(err instanceof Error ? err.message : 'Action failed')
     }
   }
 

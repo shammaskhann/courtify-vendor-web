@@ -21,7 +21,7 @@ export class ApiError extends Error {
  * would otherwise surface as "An unexpected error occurred", which tells the
  * vendor nothing about whether to sign in again or call support.
  */
-function describeHttpError(status: number): string {
+export function describeHttpError(status: number): string {
   switch (status) {
     case 400: return 'The request was rejected as invalid (400).'
     case 401: return 'Your session has expired. Please sign in again (401).'
@@ -74,8 +74,8 @@ async function fetchClient<T>(
     const url = `${BASE_URL.replace(/\/+$/, '')}/${endpoint.replace(/^\/+/, '')}`
     const response = await fetch(url, config)
 
-    // Global 401 handler
-    if (response.status === 401) {
+    // Global 401 and 403 handler
+    if (response.status === 401 || response.status === 403) {
       authStorage.clearToken()
       // If we are in the browser, trigger a custom event that the AuthContext can listen to
       if (typeof window !== 'undefined') {

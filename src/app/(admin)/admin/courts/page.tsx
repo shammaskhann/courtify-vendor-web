@@ -7,8 +7,10 @@ import { DataTable } from '@/components/ui/DataTable'
 import { Button } from '@/components/ui/Button'
 import { ConfirmationModal } from '@/components/ui/ConfirmationModal'
 import { StatusBadge } from '@/components/ui/StatusBadge'
-import { RefreshCw, CheckCircle, XCircle, RotateCcw } from 'lucide-react'
+import { RefreshCw, CheckCircle, XCircle, RotateCcw, Star } from 'lucide-react'
 import { getPendingCourts, approveCourt, disableCourt, enableCourt } from '@/lib/api/adminApi'
+import toast from 'react-hot-toast'
+import Link from 'next/link'
 import type { Court } from '@/types/models'
 
 export default function AdminCourtsPage() {
@@ -23,7 +25,7 @@ export default function AdminCourtsPage() {
       const resp = await getPendingCourts(0, 100)
       setCourts(resp.data || [])
     } catch (err) {
-      console.error(String(err))
+      toast.error(err instanceof Error ? err.message : 'Failed to load courts')
       setCourts([])
     } finally {
       setLoading(false)
@@ -45,10 +47,11 @@ export default function AdminCourtsPage() {
       else if (confirm.action === 'DISABLE') await disableCourt(confirm.court.id)
       else if (confirm.action === 'ENABLE') await enableCourt(confirm.court.id)
       
+      toast.success(`Court successfully ${confirm.action.toLowerCase()}d!`)
       setConfirm({ open: false })
       fetchCourts()
     } catch (err) {
-      console.error(String(err))
+      toast.error(err instanceof Error ? err.message : 'Action failed')
     }
   }
 
@@ -92,6 +95,22 @@ export default function AdminCourtsPage() {
       )
     },
     { header: 'Pricing', accessor: (row: Court) => row.pricingType || '—' },
+    {
+      header: 'Rating',
+      accessor: (row: Court) => {
+        if (!row.reviewCount) return <span className="text-secondary text-sm">No reviews</span>
+        return (
+          <Link 
+            href={`/admin/reviews?courtId=${row.id}`}
+            className="flex items-center gap-1 text-sm hover:text-brand transition-colors"
+          >
+            <Star size={14} className="fill-brand text-brand" />
+            <span className="font-medium">{row.avgRating?.toFixed(1) || '0.0'}</span>
+            <span className="text-secondary">({row.reviewCount})</span>
+          </Link>
+        )
+      }
+    },
     {
       header: 'Status',
       accessor: (row: Court) => {

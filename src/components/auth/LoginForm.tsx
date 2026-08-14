@@ -95,7 +95,7 @@ export function LoginForm() {
             error={fieldErrors.password}
           />
           <div className="flex justify-end mt-1">
-            <Link href="#" className="text-caption text-brand hover:underline font-medium">
+            <Link href="/forgot-password" className="text-caption text-brand hover:underline font-medium">
               Forgot password?
             </Link>
           </div>

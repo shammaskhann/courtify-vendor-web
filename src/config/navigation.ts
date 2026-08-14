@@ -9,6 +9,9 @@ import {
   BarChart3,
   Settings,
   HelpCircle,
+  Store,
+  Database,
+  Star,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
@@ -95,6 +98,21 @@ export const adminNavigation: NavItem[] = [
     label: 'Bookings',
     href: '/admin/bookings',
     icon: CalendarDays,
+  },
+  {
+    label: 'Marketplace',
+    href: '/admin/marketplace',
+    icon: Store,
+  },
+  {
+    label: 'Metadata',
+    href: '/admin/metadata',
+    icon: Database,
+  },
+  {
+    label: 'Reviews',
+    href: '/admin/reviews',
+    icon: Star,
   },
   {
     label: 'Common Settings',

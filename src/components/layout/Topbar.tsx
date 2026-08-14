@@ -1,8 +1,12 @@
 'use client'
 
-import { Bell, Search, Menu } from 'lucide-react'
+import { useState, useRef, useEffect } from 'react'
+import { Bell, Menu, LogOut, Settings, KeyRound } from 'lucide-react'
 import { ThemeToggle } from '@/components/common/ThemeToggle'
 import { cn } from '@/lib/utils'
+import { useAuth } from '@/contexts/AuthContext'
+import Link from 'next/link'
+import { ROUTES } from '@/lib/constants'
 
 interface TopbarProps {
   onMenuToggle?: () => void
@@ -11,11 +15,32 @@ interface TopbarProps {
 }
 
 export function Topbar({ onMenuToggle, pageTitle, className }: TopbarProps) {
+  const { user, logout } = useAuth()
+  const [isProfileOpen, setIsProfileOpen] = useState(false)
+  const dropdownRef = useRef<HTMLDivElement>(null)
+
+  const userName = user?.name || user?.businessName || 'Vendor Admin'
+  const userInitials = userName.substring(0, 2).toUpperCase()
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsProfileOpen(false)
+      }
+    }
+    if (isProfileOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [isProfileOpen])
+
   return (
     <header
       className={cn(
         'h-topbar flex items-center gap-4 px-6',
-        'bg-surface border-b border-border',
+        'bg-transparent',
         'sticky top-0 z-40',
         className
       )}
@@ -46,30 +71,6 @@ export function Topbar({ onMenuToggle, pageTitle, className }: TopbarProps) {
       {/* Spacer */}
       <div className="flex-1" />
 
-      {/* Search */}
-      <div className="hidden md:flex items-center">
-        <div className="relative">
-          <Search
-            size={16}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-tertiary"
-            aria-hidden="true"
-          />
-          <input
-            type="search"
-            placeholder="Search venues, courts, bookings..."
-            className={cn(
-              'w-64 h-9 pl-9 pr-4',
-              'bg-surface-variant border border-border rounded-lg',
-              'text-body text-primary placeholder:text-tertiary',
-              'focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand',
-              'transition-all duration-base',
-              'xl:w-80'
-            )}
-            aria-label="Search"
-          />
-        </div>
-      </div>
-
       {/* Actions */}
       <div className="flex items-center gap-1">
         {/* Theme toggle */}
@@ -83,7 +84,7 @@ export function Topbar({ onMenuToggle, pageTitle, className }: TopbarProps) {
             'transition-all duration-base',
             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand'
           )}
-          aria-label="Notifications — 3 unread"
+          aria-label="Notifications"
         >
           <Bell size={18} aria-hidden="true" />
           {/* Unread badge */}
@@ -93,26 +94,63 @@ export function Topbar({ onMenuToggle, pageTitle, className }: TopbarProps) {
           />
         </button>
 
-        {/* Profile */}
-        <button
-          className={cn(
-            'inline-flex items-center gap-2 pl-2 pr-3 h-10 rounded-lg',
-            'hover:bg-surface-variant transition-all duration-base',
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand'
-          )}
-          aria-label="Open profile menu"
-          aria-haspopup="true"
-        >
-          {/* Avatar placeholder */}
-          <div className="h-7 w-7 rounded-full bg-brand flex items-center justify-center shrink-0">
-            <span className="text-caption font-bold text-[#1C1C1E]" aria-hidden="true">
-              VA
+        {/* Profile Dropdown */}
+        <div className="relative" ref={dropdownRef}>
+          <button
+            onClick={() => setIsProfileOpen(!isProfileOpen)}
+            className={cn(
+              'inline-flex items-center gap-2 pl-2 pr-3 h-10 rounded-lg',
+              'hover:bg-surface-variant transition-all duration-base',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand',
+              isProfileOpen && 'bg-surface-variant'
+            )}
+            aria-label="Open profile menu"
+            aria-haspopup="true"
+            aria-expanded={isProfileOpen}
+          >
+            {/* Avatar placeholder */}
+            <div className="h-7 w-7 rounded-full bg-brand flex items-center justify-center shrink-0">
+              <span className="text-caption font-bold text-[#1C1C1E]" aria-hidden="true">
+                {userInitials}
+              </span>
+            </div>
+            <span className="hidden xl:block text-body-sm font-medium text-primary">
+              {userName}
             </span>
-          </div>
-          <span className="hidden xl:block text-body-sm font-medium text-primary">
-            Vendor Admin
-          </span>
-        </button>
+          </button>
+
+          {isProfileOpen && (
+            <div className="absolute right-0 mt-2 w-48 bg-surface border border-border rounded-lg shadow-lg py-1 z-50">
+              <Link 
+                href={ROUTES.SETTINGS} 
+                className="flex items-center gap-2 px-4 py-2 text-body-sm text-secondary hover:text-primary hover:bg-surface-variant transition-colors"
+                onClick={() => setIsProfileOpen(false)}
+              >
+                <Settings size={16} />
+                Settings
+              </Link>
+              <Link 
+                href={ROUTES.SETTINGS} 
+                className="flex items-center gap-2 px-4 py-2 text-body-sm text-secondary hover:text-primary hover:bg-surface-variant transition-colors"
+                onClick={() => setIsProfileOpen(false)}
+              >
+                <KeyRound size={16} />
+                Reset Password
+              </Link>
+              <div className="h-px bg-border my-1" />
+              <button
+                onClick={() => {
+                  setIsProfileOpen(false)
+                  logout()
+                }}
+                className="w-full flex items-center gap-2 px-4 py-2 text-body-sm text-error hover:bg-error-bg/50 transition-colors text-left"
+              >
+                <LogOut size={16} />
+                Sign Out
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </header>
   )
