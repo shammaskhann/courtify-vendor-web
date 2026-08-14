@@ -1,31 +1,149 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Input } from '@/components/forms/Input'
 import { Button } from '@/components/ui/Button'
-import { StatusBadge } from '@/components/ui/StatusBadge'
-import { Building2, Mail, Phone, Lock, CreditCard, Bell, Globe } from 'lucide-react'
+import { useAuth } from '@/contexts/AuthContext'
+import { siteConfig } from '@/config/site'
+import {
+  getVendorProfile,
+  updateVendorProfile,
+  changePassword,
+  type UserProfile
+} from '@/lib/api/settingsApi'
+import { Building2, Mail, Phone, Lock, CreditCard, CheckCircle2 } from 'lucide-react'
+
+type TabId = 'profile' | 'account' | 'payments'
+
+const TABS: { id: TabId; label: string; icon: typeof Building2 }[] = [
+  { id: 'profile', label: 'Business Profile', icon: Building2 },
+  { id: 'account', label: 'Account Security', icon: Lock },
+  { id: 'payments', label: 'Payouts & Banking', icon: CreditCard },
+]
 
 export default function SettingsPage() {
-  const [activeTab, setActiveTab] = useState('profile')
+  const { updateSessionUser } = useAuth()
+  const [activeTab, setActiveTab] = useState<TabId>('profile')
+  const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
 
-  const handleSave = (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsSaving(true)
-    setTimeout(() => {
-      setIsSaving(false)
-      // Normally show a success toast here
-    }, 800)
+  const [profile, setProfile] = useState<UserProfile | null>(null)
+  const [formProfile, setFormProfile] = useState({
+    name: '',
+    isNotificationsEnabled: true,
+  })
+
+  const [passwords, setPasswords] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  })
+
+  useEffect(() => {
+    let mounted = true
+    const fetchProfile = async () => {
+      try {
+        setIsLoading(true)
+        const data = await getVendorProfile()
+        if (mounted) {
+          setProfile(data)
+          setFormProfile({
+            name: data.name || '',
+            isNotificationsEnabled: data.isNotificationsEnabled,
+          })
+        }
+      } catch (err) {
+        if (mounted) {
+          console.error('Failed to fetch profile', err)
+          setError('Failed to load profile data.')
+        }
+      } finally {
+        if (mounted) {
+          setIsLoading(false)
+        }
+      }
+    }
+    
+    fetchProfile()
+    return () => { mounted = false }
+  }, [])
+
+  const switchTab = (tab: TabId) => {
+    setActiveTab(tab)
+    setError(null)
+    setSuccess(null)
   }
 
-  const tabs = [
-    { id: 'profile', label: 'Business Profile', icon: Building2 },
-    { id: 'account', label: 'Account Security', icon: Lock },
-    { id: 'notifications', label: 'Notifications', icon: Bell },
-    { id: 'payments', label: 'Payouts & Banking', icon: CreditCard },
-  ]
+  const handleProfileSave = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsSaving(true)
+    setError(null)
+    setSuccess(null)
+    
+    try {
+      await updateVendorProfile({
+        name: formProfile.name,
+        isNotificationsEnabled: formProfile.isNotificationsEnabled,
+      })
+      
+      const data = await getVendorProfile()
+      setProfile(data)
+      setFormProfile({
+        name: data.name || '',
+        isNotificationsEnabled: data.isNotificationsEnabled,
+      })
+      updateSessionUser({ name: data.name })
+      setSuccess('Business profile updated.')
+    } catch (err) {
+      setError((err as Error).message || 'Could not save your changes.')
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handlePasswordSave = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (passwords.newPassword !== passwords.confirmPassword) {
+      setError('New passwords do not match.')
+      return
+    }
+    
+    setIsSaving(true)
+    setError(null)
+    setSuccess(null)
+    
+    try {
+      await changePassword({
+        oldPassword: passwords.currentPassword,
+        newPassword: passwords.newPassword,
+      })
+      setPasswords({ currentPassword: '', newPassword: '', confirmPassword: '' })
+      setSuccess('Password updated.')
+    } catch (err) {
+      setError((err as Error).message || 'Could not save your changes.')
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const banner = (
+    <>
+      {error && (
+        <div className="p-3 rounded-lg bg-error/10 border border-error/20 text-error-text text-body-sm">
+          {error}
+        </div>
+      )}
+      {success && (
+        <div className="p-3 rounded-lg bg-success-bg border border-success/20 text-success-text text-body-sm flex items-center gap-2">
+          <CheckCircle2 size={16} />
+          {success}
+        </div>
+      )}
+    </>
+  )
 
   return (
     <div className="flex flex-col gap-6 pb-8 h-full">
@@ -38,13 +156,13 @@ export default function SettingsPage() {
         {/* Settings Navigation */}
         <div className="w-full lg:w-64 shrink-0 bg-surface border border-border rounded-xl p-2 shadow-sm">
           <nav className="flex flex-col gap-1">
-            {tabs.map((tab) => {
+            {TABS.map((tab) => {
               const Icon = tab.icon
               const isActive = activeTab === tab.id
               return (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
+                  onClick={() => switchTab(tab.id)}
                   className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-body-sm font-medium transition-all ${
                     isActive
                       ? 'bg-brand/10 text-brand'
@@ -62,86 +180,107 @@ export default function SettingsPage() {
         {/* Settings Content */}
         <div className="flex-1 bg-surface border border-border rounded-xl shadow-sm w-full">
           {activeTab === 'profile' && (
-            <form onSubmit={handleSave} className="p-6 space-y-6">
+            <form onSubmit={handleProfileSave} className="p-6 space-y-6">
               <div>
                 <h3 className="text-h4 font-semibold text-primary mb-1">Business Profile</h3>
-                <p className="text-body-sm text-secondary">Update your vendor details and contact information.</p>
+                <p className="text-body-sm text-secondary">Update your vendor details and preferences.</p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
-                <Input label="Business Name" defaultValue="Courtify Sports LLC" required />
-                <Input label="Business Registration Number" defaultValue="REG-99281-22" />
-                <Input label="Support Email" type="email" defaultValue="support@courtifysports.com" leftIcon={<Mail size={16} />} required />
-                <Input label="Support Phone" type="tel" defaultValue="+92 300 1234567" leftIcon={<Phone size={16} />} required />
-                <div className="md:col-span-2">
-                  <Input label="Website" type="url" defaultValue="https://courtifysports.com" leftIcon={<Globe size={16} />} />
-                </div>
-              </div>
+              {banner}
 
-              <div className="pt-6 border-t border-border flex justify-end">
-                <Button type="submit" isLoading={isSaving}>Save Changes</Button>
-              </div>
+              {isLoading ? (
+                <div className="text-body-sm text-secondary py-4">Loading profile...</div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+                    <div className="md:col-span-2">
+                      <Input
+                        label="Business Name"
+                        required
+                        value={formProfile.name}
+                        onChange={(e) => setFormProfile({ ...formProfile, name: e.target.value })}
+                      />
+                    </div>
+                    <Input
+                      label="Support Email"
+                      type="email"
+                      value={profile?.email || ''}
+                      disabled
+                      leftIcon={<Mail size={16} />}
+                      helperText="Contact support to change your email."
+                    />
+                    <Input
+                      label="Support Phone"
+                      type="tel"
+                      value={profile?.contact || ''}
+                      disabled
+                      leftIcon={<Phone size={16} />}
+                      helperText="Contact support to change your phone number."
+                    />
+                  </div>
+
+                  <div className="pt-4 pb-2">
+                    <h4 className="text-body font-semibold text-primary mb-3">Notification Preferences</h4>
+                    <div className="flex items-start gap-3 p-3 rounded-lg border border-border bg-surface-variant/30">
+                      <input
+                        type="checkbox"
+                        id="isNotificationsEnabled"
+                        checked={formProfile.isNotificationsEnabled}
+                        onChange={(e) => setFormProfile({ ...formProfile, isNotificationsEnabled: e.target.checked })}
+                        className="mt-1 w-4 h-4 text-brand rounded border-border focus:ring-brand accent-brand"
+                      />
+                      <div>
+                        <label htmlFor="isNotificationsEnabled" className="text-body-sm font-medium text-primary block">
+                          Receive Email Notifications
+                        </label>
+                        <span className="text-caption text-secondary">Get notified when new bookings or cancellations happen.</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="pt-6 border-t border-border flex justify-end">
+                    <Button type="submit" isLoading={isSaving}>Save Changes</Button>
+                  </div>
+                </>
+              )}
             </form>
           )}
 
           {activeTab === 'account' && (
-            <div className="p-6 space-y-6">
+            <form onSubmit={handlePasswordSave} className="p-6 space-y-6">
               <div>
                 <h3 className="text-h4 font-semibold text-primary mb-1">Account Security</h3>
-                <p className="text-body-sm text-secondary">Manage your password and security settings.</p>
+                <p className="text-body-sm text-secondary">Change the password you use to sign in.</p>
               </div>
 
-              <form onSubmit={handleSave} className="space-y-4 max-w-md pt-4">
-                <Input label="Current Password" type="password" required />
-                <Input label="New Password" type="password" required />
-                <Input label="Confirm New Password" type="password" required />
-                
-                <div className="pt-4">
-                  <Button type="submit" isLoading={isSaving}>Update Password</Button>
-                </div>
-              </form>
+              {banner}
 
-              <div className="pt-6 border-t border-border">
-                <h4 className="text-body font-medium text-primary mb-2">Two-Factor Authentication</h4>
-                <p className="text-body-sm text-secondary mb-4">Add an extra layer of security to your account.</p>
-                <Button variant="secondary">Enable 2FA</Button>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'notifications' && (
-            <form onSubmit={handleSave} className="p-6 space-y-6">
-              <div>
-                <h3 className="text-h4 font-semibold text-primary mb-1">Notification Preferences</h3>
-                <p className="text-body-sm text-secondary">Choose what alerts you want to receive and how.</p>
-              </div>
-
-              <div className="space-y-4 pt-4">
-                {[
-                  { id: 'n1', label: 'New Bookings', desc: 'Get notified when a new booking is made.' },
-                  { id: 'n2', label: 'Cancellations', desc: 'Get notified when a booking is cancelled.' },
-                  { id: 'n3', label: 'Payments', desc: 'Get notified for successful payouts.' },
-                  { id: 'n4', label: 'Marketing', desc: 'Receive Courtify updates and offers.', defaultUnchecked: true },
-                ].map((item) => (
-                  <div key={item.id} className="flex items-start gap-3 p-3 rounded-lg border border-border bg-surface-variant/30">
-                    <input 
-                      type="checkbox" 
-                      id={item.id}
-                      defaultChecked={!item.defaultUnchecked}
-                      className="mt-1 w-4 h-4 text-brand rounded border-border focus:ring-brand accent-brand"
-                    />
-                    <div>
-                      <label htmlFor={item.id} className="text-body-sm font-medium text-primary block">
-                        {item.label}
-                      </label>
-                      <span className="text-caption text-secondary">{item.desc}</span>
-                    </div>
-                  </div>
-                ))}
+              <div className="space-y-4 max-w-md pt-2">
+                <Input
+                  label="Current Password"
+                  type="password"
+                  required
+                  value={passwords.currentPassword}
+                  onChange={(e) => setPasswords({ ...passwords, currentPassword: e.target.value })}
+                />
+                <Input
+                  label="New Password"
+                  type="password"
+                  required
+                  value={passwords.newPassword}
+                  onChange={(e) => setPasswords({ ...passwords, newPassword: e.target.value })}
+                />
+                <Input
+                  label="Confirm New Password"
+                  type="password"
+                  required
+                  value={passwords.confirmPassword}
+                  onChange={(e) => setPasswords({ ...passwords, confirmPassword: e.target.value })}
+                />
               </div>
 
               <div className="pt-6 border-t border-border flex justify-end">
-                <Button type="submit" isLoading={isSaving}>Save Preferences</Button>
+                <Button type="submit" isLoading={isSaving}>Update Password</Button>
               </div>
             </form>
           )}
@@ -153,21 +292,21 @@ export default function SettingsPage() {
                 <p className="text-body-sm text-secondary">Manage where your earnings are sent.</p>
               </div>
 
-              <div className="bg-surface-variant border border-border rounded-lg p-4 flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-surface rounded shadow-sm border border-border flex items-center justify-center">
-                    <CreditCard className="text-secondary" />
-                  </div>
-                  <div>
-                    <p className="text-body-sm font-medium text-primary">HBL - Habib Bank Limited</p>
-                    <p className="text-caption text-secondary">**** **** **** 4592</p>
-                  </div>
+              <div className="flex flex-col items-center text-center p-8 rounded-xl border border-dashed border-border bg-surface-variant/30">
+                <div className="w-12 h-12 rounded-full bg-surface flex items-center justify-center border border-border mb-4">
+                  <CreditCard size={22} className="text-secondary" />
                 </div>
-                <StatusBadge status="ACTIVE" />
-              </div>
-
-              <div className="pt-2">
-                <Button variant="secondary">Add New Bank Account</Button>
+                <h4 className="text-body font-semibold text-primary mb-1">No payout account on file</h4>
+                <p className="text-body-sm text-secondary max-w-sm mb-4">
+                  Bank details are collected and verified by the Courtify team so your
+                  earnings go to the right account. Contact us to set yours up.
+                </p>
+                <a
+                  href={`mailto:${siteConfig.supportEmail}?subject=Payout%20account%20setup`}
+                  className="text-body-sm font-medium text-brand hover:underline"
+                >
+                  {siteConfig.supportEmail}
+                </a>
               </div>
             </div>
           )}

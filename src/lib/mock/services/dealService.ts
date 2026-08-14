@@ -24,10 +24,10 @@ export async function getDealById(id: string): Promise<Deal | null> {
   return deals.find(d => d.id === id) || null
 }
 
-export async function createDeal(data: Omit<Deal, 'id' | 'usedCount' | 'createdAt'>): Promise<Deal> {
+export async function createDeal(data: Omit<Deal, 'id' | 'usesCount' | 'createdAt'>): Promise<Deal> {
   await mockDelay()
   mockError()
-  const deal: Deal = { ...data, id: `deal-${Date.now()}`, usedCount: 0, createdAt: new Date().toISOString() }
+  const deal: Deal = { ...data, id: `deal-${Date.now()}`, usesCount: 0, createdAt: new Date().toISOString() }
   deals = [deal, ...deals]
   return deal
 }

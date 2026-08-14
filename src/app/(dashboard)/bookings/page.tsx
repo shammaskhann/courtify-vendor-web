@@ -1,27 +1,37 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { FilterBar } from '@/components/ui/FilterBar'
 import { DataTable } from '@/components/ui/DataTable'
 import { StatusBadge } from '@/components/ui/StatusBadge'
+import { Button } from '@/components/ui/Button'
 import { BookingDetailSlideOver } from '@/components/bookings/BookingDetailSlideOver'
+import { BookingCalendar, getVisibleRange, type CalendarView } from '@/components/bookings/BookingCalendar'
+import { CheckInPanel } from '@/components/bookings/CheckInPanel'
+import { ManualBookingForm } from '@/components/bookings/ManualBookingForm'
 import { getBookings, updateBookingStatus } from '@/lib/api/bookingApi'
 import { getVenues } from '@/lib/api/venueApi'
+import { toDateKey } from '@/lib/analytics-derive'
 import type { Booking, Venue } from '@/types/models'
 import { PAYMENT_STATUSES } from '@/types/models'
+import { CalendarDays, List, Plus, QrCode } from 'lucide-react'
 import { useSearchParams, useRouter } from 'next/navigation'
+
+type ViewMode = 'list' | 'calendar'
 
 export default function BookingsPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const venueIdParam = searchParams.get('venueId')
 
+  const [viewMode, setViewMode] = useState<ViewMode>('list')
+
   const [bookings, setBookings] = useState<Booking[]>([])
   const [venues, setVenues] = useState<Venue[]>([])
   const [total, setTotal] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
-  
+
   // Pagination & Filtering
   const [page, setPage] = useState(1)
   const [filters, setFilters] = useState<Record<string, any>>(
@@ -30,27 +40,22 @@ export default function BookingsPage() {
   const [activeTab, setActiveTab] = useState<string>('ALL')
   const pageSize = 15
 
-  // Details SlideOver
+  // Calendar
+  const [calendarView, setCalendarView] = useState<CalendarView>('week')
+  const [anchorDate, setAnchorDate] = useState(() => new Date())
+  const [calendarBookings, setCalendarBookings] = useState<Booking[]>([])
+  const [isCalendarLoading, setIsCalendarLoading] = useState(false)
+
+  // Panels
   const [detailBooking, setDetailBooking] = useState<Booking | null>(null)
   const [isDetailOpen, setIsDetailOpen] = useState(false)
+  const [isCheckInOpen, setIsCheckInOpen] = useState(false)
+  const [isNewBookingOpen, setIsNewBookingOpen] = useState(false)
 
   // Quick Actions
   const [updatingId, setUpdatingId] = useState<string | number | null>(null)
 
-  const handleQuickStatusChange = async (e: React.MouseEvent, id: string | number, newStatus: Booking['status']) => {
-    e.stopPropagation()
-    try {
-      setUpdatingId(id)
-      await updateBookingStatus(id, newStatus)
-      await fetchData()
-    } catch (error) {
-      console.error('Failed to update booking status:', error)
-    } finally {
-      setUpdatingId(null)
-    }
-  }
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setIsLoading(true)
       const combinedFilters = { ...filters }
@@ -70,11 +75,57 @@ export default function BookingsPage() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [page, filters, activeTab])
 
   useEffect(() => {
     fetchData()
-  }, [page, filters, activeTab])
+  }, [fetchData])
+
+  // The calendar queries by visible range rather than by page.
+  const anchorTime = anchorDate.getTime()
+  const venueFilter = filters.venueId
+  const fetchCalendar = useCallback(async () => {
+    const range = getVisibleRange(calendarView, new Date(anchorTime))
+
+    try {
+      setIsCalendarLoading(true)
+      const res = await getBookings({
+        startDate: toDateKey(range.start),
+        endDate: toDateKey(range.end),
+        pageSize: 500,
+        ...(venueFilter ? { venueId: venueFilter } : {}),
+      })
+      setCalendarBookings(res.data)
+    } catch (error) {
+      console.error('Failed to fetch calendar bookings:', error)
+      setCalendarBookings([])
+    } finally {
+      setIsCalendarLoading(false)
+    }
+  }, [calendarView, anchorTime, venueFilter])
+
+  useEffect(() => {
+    if (viewMode !== 'calendar') return
+    fetchCalendar()
+  }, [viewMode, fetchCalendar])
+
+  const refreshAll = useCallback(() => {
+    fetchData()
+    if (viewMode === 'calendar') fetchCalendar()
+  }, [fetchData, fetchCalendar, viewMode])
+
+  const handleQuickStatusChange = async (e: React.MouseEvent, id: string | number, newStatus: Booking['status']) => {
+    e.stopPropagation()
+    try {
+      setUpdatingId(id)
+      await updateBookingStatus(id, newStatus)
+      await fetchData()
+    } catch (error) {
+      console.error('Failed to update booking status:', error)
+    } finally {
+      setUpdatingId(null)
+    }
+  }
 
   // Update URL visually if param changes
   useEffect(() => {
@@ -206,69 +257,131 @@ export default function BookingsPage() {
       <PageHeader
         title="Bookings"
         subtitle="Manage all your customer reservations and schedules."
+        actions={
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center bg-surface-variant border border-border rounded-lg p-0.5">
+              <button
+                onClick={() => setViewMode('list')}
+                aria-label="List view"
+                className={`p-1.5 rounded-md transition-colors ${
+                  viewMode === 'list' ? 'bg-surface text-primary shadow-sm' : 'text-secondary hover:text-primary'
+                }`}
+              >
+                <List size={18} />
+              </button>
+              <button
+                onClick={() => setViewMode('calendar')}
+                aria-label="Calendar view"
+                className={`p-1.5 rounded-md transition-colors ${
+                  viewMode === 'calendar' ? 'bg-surface text-primary shadow-sm' : 'text-secondary hover:text-primary'
+                }`}
+              >
+                <CalendarDays size={18} />
+              </button>
+            </div>
+
+            <Button variant="secondary" onClick={() => setIsCheckInOpen(true)}>
+              <QrCode size={16} className="mr-2" />
+              Check in
+            </Button>
+            <Button onClick={() => setIsNewBookingOpen(true)}>
+              <Plus size={16} className="mr-2" />
+              New booking
+            </Button>
+          </div>
+        }
       />
 
-      <div className="bg-surface border border-border rounded-xl shadow-sm flex flex-col h-full">
-        {/* Tabs */}
-        <div className="flex items-center overflow-x-auto border-b border-border hide-scrollbar">
-          {tabs.map((tab) => (
-            <button
-              key={tab.value}
-              onClick={() => handleTabChange(tab.value)}
-              className={`px-6 py-4 text-body-sm font-medium whitespace-nowrap transition-colors border-b-2 ${
-                activeTab === tab.value
-                  ? 'border-brand text-primary'
-                  : 'border-transparent text-secondary hover:text-primary'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Filters */}
-        <div className="p-4 border-b border-border bg-surface-variant/30">
-          <FilterBar
-            configs={[
-              { key: 'search', label: 'Search', type: 'search', placeholder: 'Search by name, ref...' },
-              { key: 'venueId', label: 'Venue', type: 'select', options: venueOptions },
-              { key: 'paymentStatus', label: 'Payment', type: 'select', options: PAYMENT_STATUSES.map(s => ({ label: s, value: s })) },
-              { key: 'dateRange', label: 'Date', type: 'select', options: [
-                { label: 'Today', value: 'today' },
-                { label: 'Tomorrow', value: 'tomorrow' },
-                { label: 'Next 7 Days', value: 'next_7' },
-                { label: 'This Month', value: 'this_month' },
-              ]},
-            ]}
-            onFilterChange={handleFilterChange}
-            className="border-none shadow-none bg-transparent p-0"
+      {viewMode === 'calendar' ? (
+        <div className="flex-1 min-h-[600px]">
+          <BookingCalendar
+            bookings={calendarBookings}
+            view={calendarView}
+            anchorDate={anchorDate}
+            isLoading={isCalendarLoading}
+            onViewChange={setCalendarView}
+            onAnchorDateChange={setAnchorDate}
+            onSelectBooking={handleRowClick}
           />
         </div>
+      ) : (
+        <div className="bg-surface border border-border rounded-xl shadow-sm flex flex-col h-full">
+          {/* Tabs */}
+          {/* shrink-0: overflow-x-auto zeroes the flex item's automatic min-height,
+              which otherwise lets this row collapse inside the h-full column. */}
+          <div className="flex items-center shrink-0 overflow-x-auto border-b border-border hide-scrollbar">
+            {tabs.map((tab) => (
+              <button
+                key={tab.value}
+                onClick={() => handleTabChange(tab.value)}
+                className={`px-6 py-4 text-body-sm font-medium whitespace-nowrap transition-colors border-b-2 ${
+                  activeTab === tab.value
+                    ? 'border-brand text-primary'
+                    : 'border-transparent text-secondary hover:text-primary'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
 
-        {/* Table */}
-        <div className="flex-1">
-          <DataTable
-            data={bookings}
-            columns={columns}
-            isLoading={isLoading}
-            keyExtractor={(b) => String(b.id)}
-            onRowClick={handleRowClick}
-            page={page}
-            pageSize={pageSize}
-            total={total}
-            onPageChange={setPage}
-            emptyStateTitle="No bookings found"
-            emptyStateDescription="There are no bookings matching your current filters."
-            className="border-0 shadow-none rounded-none"
-          />
+          {/* Filters */}
+          <div className="p-4 border-b border-border bg-surface-variant/30">
+            <FilterBar
+              configs={[
+                { key: 'search', label: 'Search', type: 'search', placeholder: 'Search by name, ref...' },
+                { key: 'venueId', label: 'Venue', type: 'select', options: venueOptions },
+                { key: 'paymentStatus', label: 'Payment', type: 'select', options: PAYMENT_STATUSES.map(s => ({ label: s, value: s })) },
+                { key: 'dateRange', label: 'Date', type: 'select', options: [
+                  { label: 'Today', value: 'today' },
+                  { label: 'Tomorrow', value: 'tomorrow' },
+                  { label: 'Next 7 Days', value: 'next_7' },
+                  { label: 'This Month', value: 'this_month' },
+                ]},
+              ]}
+              onFilterChange={handleFilterChange}
+              className="border-none shadow-none bg-transparent p-0"
+            />
+          </div>
+
+          {/* Table */}
+          <div className="flex-1">
+            <DataTable
+              data={bookings}
+              columns={columns}
+              isLoading={isLoading}
+              keyExtractor={(b) => String(b.id)}
+              onRowClick={handleRowClick}
+              page={page}
+              pageSize={pageSize}
+              total={total}
+              onPageChange={setPage}
+              emptyStateTitle="No bookings found"
+              emptyStateDescription="There are no bookings matching your current filters."
+              className="border-0 shadow-none rounded-none"
+            />
+          </div>
         </div>
-      </div>
+      )}
 
       <BookingDetailSlideOver
         booking={detailBooking}
         isOpen={isDetailOpen}
         onClose={() => setIsDetailOpen(false)}
-        onStatusChange={fetchData}
+        onStatusChange={refreshAll}
+      />
+
+      <CheckInPanel
+        isOpen={isCheckInOpen}
+        onClose={() => setIsCheckInOpen(false)}
+        onCheckedIn={refreshAll}
+      />
+
+      <ManualBookingForm
+        isOpen={isNewBookingOpen}
+        onClose={() => setIsNewBookingOpen(false)}
+        venues={venues}
+        onCreated={refreshAll}
       />
     </div>
   )

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, use } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/Button'
 import { DataTable } from '@/components/ui/DataTable'
@@ -10,9 +10,9 @@ import { ArrowLeft, CheckCircle, XCircle, RotateCcw, Building2, User, Layers } f
 import { getVenueById, approveVenue, disableVenue, enableVenue, getAdminCourtsByVenue, approveCourt, disableCourt, enableCourt } from '@/lib/api/adminApi'
 import type { AdminVenue, Court } from '@/types/models'
 
-export default function AdminVenueDetailPage({ params }: { params: { id: string } }) {
+export default function AdminVenueDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter()
-  const { id } = params
+  const { id } = use(params)
   
   const [venue, setVenue] = useState<AdminVenue | null>(null)
   const [courts, setCourts] = useState<Court[]>([])

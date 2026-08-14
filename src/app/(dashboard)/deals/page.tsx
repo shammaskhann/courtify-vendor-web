@@ -122,21 +122,45 @@ export default function DealsPage() {
       ),
     },
     {
-      header: 'Usage',
+      header: 'Courts',
       render: (deal: Deal) => (
-        <div className="flex flex-col">
-          <div className="flex items-center gap-2 mb-1 text-caption text-secondary">
-            <span>{deal.usedCount} / {deal.maxUses}</span>
-            <span className="font-medium">({Math.round((deal.usedCount / deal.maxUses) * 100)}%)</span>
-          </div>
-          <div className="w-24 h-1.5 bg-surface-variant rounded-pill overflow-hidden">
-            <div 
-              className="h-full bg-brand transition-all duration-500"
-              style={{ width: `${Math.min((deal.usedCount / deal.maxUses) * 100, 100)}%` }}
-            />
-          </div>
+        <div className="flex items-center gap-2">
+          {deal.applyOnAllCourts ? (
+            <span className="px-2 py-0.5 rounded text-caption font-medium bg-brand/10 text-brand border border-brand/20">
+              All Courts
+            </span>
+          ) : (
+            <span className="px-2 py-0.5 rounded text-caption font-medium bg-surface-variant text-secondary border border-border">
+              {deal.courtIds?.length || 0} Selected
+            </span>
+          )}
         </div>
       ),
+    },
+    {
+      header: 'Usage',
+      render: (deal: Deal) => {
+        const uses = deal.usesCount || 0
+        const max = deal.maxUses || 1
+        const pct = Math.min((uses / max) * 100, 100)
+        
+        return (
+          <div className="flex flex-col">
+            <div className="flex items-center gap-2 mb-1 text-caption text-secondary">
+              <span>{uses} / {deal.maxUses || '∞'}</span>
+              {deal.maxUses && <span className="font-medium">({Math.round(pct)}%)</span>}
+            </div>
+            {deal.maxUses && (
+              <div className="w-24 h-1.5 bg-surface-variant rounded-pill overflow-hidden">
+                <div 
+                  className="h-full bg-brand transition-all duration-500"
+                  style={{ width: `${pct}%` }}
+                />
+              </div>
+            )}
+          </div>
+        )
+      },
     },
     {
       header: 'Validity',

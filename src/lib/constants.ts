@@ -19,6 +19,9 @@ export const ROUTES = {
   ADMIN_COURTS: '/admin/courts',
   ADMIN_USERS: '/admin/users',
   ADMIN_BOOKINGS: '/admin/bookings',
+  ADMIN_MARKETPLACE: '/admin/marketplace',
+  ADMIN_METADATA: '/admin/metadata',
+  ADMIN_REVIEWS: '/admin/reviews',
   ADMIN_COMMON: '/admin/common',
   // Auth
   LOGIN: '/login',

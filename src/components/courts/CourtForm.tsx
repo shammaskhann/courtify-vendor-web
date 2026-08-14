@@ -345,25 +345,31 @@ export function CourtForm({ initialData, venues, preselectedVenueId, onSubmit, o
                 <label className="block text-body-sm font-medium text-primary mb-2">
                   Sport Types (Select all that apply) <span className="text-error">*</span>
                 </label>
-                <div className="flex flex-wrap gap-2">
-                  {sportTypes.map((sport) => {
-                    const isSelected = formData.sportType.includes(sport.name)
-                    return (
-                      <button
-                        key={sport.id}
-                        type="button"
-                        onClick={() => toggleSport(sport.name)}
-                        className={`px-3 py-1.5 rounded-full text-caption font-medium border transition-colors ${
-                          isSelected 
-                            ? 'bg-brand/10 border-brand text-brand' 
-                            : 'bg-surface-variant border-border text-secondary hover:border-brand/50'
-                        }`}
-                      >
-                        {sport.name}
-                      </button>
-                    )
-                  })}
-                </div>
+                {sportTypes.length === 0 ? (
+                  <div className="p-3 rounded-lg bg-error-bg border border-error/20 text-error text-body-sm">
+                    Failed to load sport types from the server. Please contact support or try again later.
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {sportTypes.map((sport) => {
+                      const isSelected = formData.sportType.includes(sport.name)
+                      return (
+                        <button
+                          key={sport.id}
+                          type="button"
+                          onClick={() => toggleSport(sport.name)}
+                          className={`px-3 py-1.5 rounded-full text-caption font-medium border transition-colors ${
+                            isSelected 
+                              ? 'bg-brand/10 border-brand text-brand' 
+                              : 'bg-surface-variant border-border text-secondary hover:border-brand/50'
+                          }`}
+                        >
+                          {sport.name}
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
               </div>
 
               <div className="flex items-center justify-between p-4 bg-surface-variant border border-border rounded-xl">
@@ -649,7 +655,8 @@ export function CourtForm({ initialData, venues, preselectedVenueId, onSubmit, o
             {step === 1 ? 'Cancel' : 'Back'}
           </Button>
           <Button
-            type="submit"
+            type={step === 5 ? "submit" : "button"}
+            onClick={step < 5 ? handleNext : undefined}
             variant="primary"
             isLoading={isSubmitting || uploadingImages}
           >

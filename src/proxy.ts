@@ -10,9 +10,9 @@ const PUBLIC_ROUTES = [
   '/under-development'
 ]
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
-  
+
   // Exclude static files, _next, api, and root route
   if (
     pathname.startsWith('/_next') ||

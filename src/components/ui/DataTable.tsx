@@ -19,7 +19,7 @@ interface DataTableProps<T> {
   data: T[]
   columns: ColumnDef<T>[]
   isLoading?: boolean
-  keyExtractor: (item: T) => string
+  keyExtractor: (item: T, index: number) => string | number | undefined
   onRowClick?: (item: T) => void
   emptyStateTitle?: string
   emptyStateDescription?: string
@@ -104,7 +104,7 @@ export function DataTable<T>({
             ) : (
               data.map((item, rowIndex) => (
                 <tr
-                  key={keyExtractor(item)}
+                  key={keyExtractor(item, rowIndex) ?? rowIndex}
                   onClick={() => onRowClick?.(item)}
                   className={cn(
                     'bg-surface hover:bg-surface-variant transition-colors',

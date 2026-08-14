@@ -34,7 +34,7 @@ export async function getDealById(id: string): Promise<Deal | null> {
   return res.data
 }
 
-export async function createDeal(data: Omit<Deal, 'id' | 'createdAt' | 'updatedAt' | 'usedCount'>): Promise<Deal> {
+export async function createDeal(data: Omit<Deal, 'id' | 'createdAt' | 'usesCount'>): Promise<Deal> {
   const res = await api.post<Deal>('/court-owner/deals', data)
   if (res.error) throw new Error(res.error)
   return res.data as Deal

@@ -54,6 +54,32 @@ export async function updateBookingStatus(bookingId: string | number, status: Bo
   return res.data as Booking
 }
 
+export interface ManualBookingInput {
+  venueId: string
+  courtId: string
+  bookingDate: string
+  startTime: string
+  endTime: string
+  customerName: string
+  customerContact: string
+  customerEmail?: string
+  amount: number
+  paymentStatus: PaymentStatus
+  notes?: string
+}
+
+/**
+ * Create a booking on the customer's behalf, for phone and walk-in trade.
+ *
+ * Requires a vendor-side create endpoint. If the backend does not accept POST on
+ * `/vendor-booking` yet, the error surfaces in the form rather than being swallowed.
+ */
+export async function createManualBooking(data: ManualBookingInput): Promise<Booking> {
+  const res = await api.post<Booking>('/vendor-booking', data)
+  if (res.error) throw new Error(res.error)
+  return res.data as Booking
+}
+
 export async function verifyQr(qrToken: string): Promise<Booking> {
   const res = await api.post<Booking>('/vendor-booking/verify-qr', { qrToken })
   if (res.error) throw new Error(res.error)

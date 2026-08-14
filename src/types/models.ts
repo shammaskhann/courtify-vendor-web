@@ -85,6 +85,10 @@ export interface Court {
   // Peak hours (shared)
   peakStartTime?: string | null
   peakEndTime?: string | null
+  // Reviews
+  reviewCount?: number
+  avgRating?: number
+  latestReviews?: ReviewResponse[]
 }
 
 export interface Booking {
@@ -117,25 +121,26 @@ export interface Booking {
 
 export interface Deal {
   id: string
+  venueId: string | number
+  applyOnAllCourts: boolean
+  courtIds: (string | number)[]
   name: string
   dealType: DealType
   dealValue: number
+  buyQuantity: number | null
+  getFreeQuantity: number | null
+  applicableStartTime: string | null
+  applicableEndTime: string | null
   applicableDays: WeekDay[]
   validFrom: string
   validTo: string
   maxUses: number
-  usedCount: number
+  usesCount: number
   promoCode: string
   priority: number
-  isStackable: boolean
   isActive: boolean
-  venueId: string | null
-  courtId: string | null
-  startTime: string | null
-  endTime: string | null
-  buyQuantity: number | null
-  getQuantity: number | null
-  createdAt: string
+  isStackable: boolean
+  createdAt?: string
 }
 
 export interface Notification {
@@ -238,3 +243,26 @@ export interface CommonItem {
   name: string
 }
 
+export interface ReviewResponse {
+  id: number
+  userId: number
+  userName: string
+  courtId: number
+  courtName: string
+  bookingId: number
+  rating: number
+  comment: string | null
+  vendorReply: string | null
+  createdAt: string
+  updatedAt: string | null
+  repliedAt: string | null
+}
+
+export interface PageResponse<T> {
+  content: T[]
+  page: number
+  size: number
+  totalElements: number
+  totalPages: number
+  last: boolean
+}

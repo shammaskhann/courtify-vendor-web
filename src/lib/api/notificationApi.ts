@@ -7,7 +7,10 @@ export interface AppNotification {
   title: string;
   message: string;
   isRead: boolean;
-  time: string; // or createdAt
+  /** Pre-formatted relative time, when the backend supplies one. */
+  time?: string;
+  /** ISO timestamp — used to format a relative time when `time` is absent. */
+  createdAt?: string;
 }
 
 export async function getNotifications(params: { page?: number; pageSize?: number } = {}): Promise<PaginatedResponse<AppNotification>> {
