@@ -18,7 +18,7 @@ interface DealFormProps {
 
 export function DealForm({ initialData, onSubmit, onCancel }: DealFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
-  
+
   const [venues, setVenues] = useState<Venue[]>([])
   const [courts, setCourts] = useState<Court[]>([])
   const [loadingVenues, setLoadingVenues] = useState(true)
@@ -107,11 +107,11 @@ export function DealForm({ initialData, onSubmit, onCancel }: DealFormProps) {
   return (
     <form onSubmit={handleSubmit} className="flex flex-col h-full">
       <div className="flex-1 overflow-y-auto pr-2 pb-4 space-y-5">
-        
+
         {/* Placement Options */}
         <div className="space-y-4 bg-surface border border-border p-4 rounded-xl">
           <h4 className="text-body font-semibold text-primary">Placement Options</h4>
-          
+
           <Dropdown
             label="Select Venue"
             required
@@ -123,8 +123,8 @@ export function DealForm({ initialData, onSubmit, onCancel }: DealFormProps) {
 
           <div className="pt-2">
             <div className="flex items-center gap-3 mb-4">
-              <input 
-                type="checkbox" 
+              <input
+                type="checkbox"
                 id="applyOnAllCourts"
                 checked={formData.applyOnAllCourts}
                 onChange={(e) => setFormData({ ...formData, applyOnAllCourts: e.target.checked })}
@@ -172,7 +172,7 @@ export function DealForm({ initialData, onSubmit, onCancel }: DealFormProps) {
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
             placeholder="e.g. Summer Special 20%"
           />
-          
+
           <div>
             <div className="flex justify-between items-end mb-1.5">
               <label className="text-label text-primary">Promo Code <span className="text-error">*</span></label>
@@ -183,8 +183,12 @@ export function DealForm({ initialData, onSubmit, onCancel }: DealFormProps) {
             <div className="relative">
               <Input
                 required
+                maxLength={15}
                 value={formData.promoCode}
-                onChange={(e) => setFormData({ ...formData, promoCode: e.target.value.toUpperCase() })}
+                onChange={(e) => {
+                  const sanitized = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 15)
+                  setFormData({ ...formData, promoCode: sanitized })
+                }}
                 placeholder="e.g. SUMMER20"
                 leftIcon={<Tag size={16} />}
               />
@@ -236,7 +240,7 @@ export function DealForm({ initialData, onSubmit, onCancel }: DealFormProps) {
               leftIcon={<Calendar size={16} />}
             />
           </div>
-          
+
           <Input
             label="Maximum Uses"
             type="number"
@@ -250,8 +254,8 @@ export function DealForm({ initialData, onSubmit, onCancel }: DealFormProps) {
 
           <div className="pt-2">
             <div className="flex items-center gap-3">
-              <input 
-                type="checkbox" 
+              <input
+                type="checkbox"
                 id="isActive"
                 checked={formData.isActive}
                 onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}

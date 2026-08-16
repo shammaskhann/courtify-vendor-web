@@ -17,6 +17,7 @@ import { getVenues, createVenue, updateVenue, deleteVenue } from '@/lib/api/venu
 import { useMetadata } from '@/contexts/MetadataContext'
 import type { Venue } from '@/types/models'
 import { ROUTES } from '@/lib/constants'
+import toast from 'react-hot-toast'
 
 
 export default function VenuesPage() {
@@ -84,8 +85,10 @@ export default function VenuesPage() {
       await deleteVenue(venueToDelete)
       await fetchVenues()
       setVenueToDelete(null)
-    } catch (error) {
+      toast.success('Venue deleted successfully')
+    } catch (error: any) {
       console.error('Failed to delete venue:', error)
+      toast.error(error.message || 'Failed to delete venue')
     } finally {
       setIsDeleting(false)
     }

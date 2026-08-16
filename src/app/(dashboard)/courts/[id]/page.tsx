@@ -10,6 +10,7 @@ import { Skeleton } from '@/components/ui/Skeleton'
 import { MapPin, Info, Tag } from 'lucide-react'
 import { ROUTES } from '@/lib/constants'
 import type { Court, Venue } from '@/types/models'
+import { CourtCalendarHeatmap } from '@/components/courts/CourtCalendarHeatmap'
 
 export default function CourtDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter()
@@ -126,6 +127,8 @@ export default function CourtDetailPage({ params }: { params: { id: string } }) 
             <p className="text-body-sm text-secondary">Venue information not available.</p>
           )}
         </div>
+
+        <CourtCalendarHeatmap courtId={court.id} openTime={venue?.openingTime} closeTime={venue?.closingTime} />
       </div>
     </div>
   )

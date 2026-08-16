@@ -3,6 +3,7 @@ import { MapPin, DollarSign, Activity, Edit, Trash2 } from 'lucide-react'
 import { StatusBadge } from '../ui/StatusBadge'
 import { Button } from '../ui/Button'
 import { ROUTES } from '@/lib/constants'
+import { getCourtBasePrice } from '@/lib/pricing'
 import type { Court } from '@/types/models'
 
 interface CourtCardProps {
@@ -56,7 +57,7 @@ export function CourtCard({ court, venueName, onEdit, onDelete }: CourtCardProps
           </div>
           <div className="flex items-center text-body-sm text-secondary">
             <DollarSign size={14} className="mr-1.5 shrink-0 text-success" />
-            <span className="font-medium text-primary">PKR {court.constantPriceOffPeak?.toLocaleString() || 0}</span> / hr
+            <span className="font-medium text-primary">PKR {getCourtBasePrice(court).toLocaleString()}</span> / hr
           </div>
         </div>
 

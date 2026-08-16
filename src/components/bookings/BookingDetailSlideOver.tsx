@@ -1,10 +1,12 @@
 import { SlideOver } from '../ui/SlideOver'
 import { StatusBadge } from '../ui/StatusBadge'
-import { Calendar, Clock, MapPin, User, Mail, Phone, Building2, Ticket } from 'lucide-react'
+import { Calendar, Clock, MapPin, User, Mail, Phone, Building2, Ticket, MessageSquare } from 'lucide-react'
 import { Button } from '../ui/Button'
 import type { Booking } from '@/types/models'
 import { updateBookingStatus } from '@/lib/api/bookingApi'
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { initiateThread } from '@/lib/api/chatApi'
 
 interface BookingDetailSlideOverProps {
   booking: Booking | null
@@ -14,6 +16,7 @@ interface BookingDetailSlideOverProps {
 }
 
 export function BookingDetailSlideOver({ booking, isOpen, onClose, onStatusChange }: BookingDetailSlideOverProps) {
+  const router = useRouter()
   const [isUpdating, setIsUpdating] = useState(false)
 
   if (!booking) return null
@@ -141,6 +144,30 @@ export function BookingDetailSlideOver({ booking, isOpen, onClose, onStatusChang
               </div>
             </div>
           </div>
+          
+          {(booking.userId || booking.customerId) && (
+            <div className="mt-3">
+              <Button 
+                variant="secondary" 
+                size="sm" 
+                className="w-full justify-center"
+                onClick={async () => {
+                  const playerId = booking.userId || booking.customerId
+                  if (!playerId) return
+                  try {
+                    const thread = await initiateThread('BOOKING', booking.id, playerId)
+                    router.push(`/vendor/messages?threadId=${thread.id}`)
+                    onClose()
+                  } catch (err) {
+                    console.error('Failed to initiate chat', err)
+                  }
+                }}
+              >
+                <MessageSquare size={16} className="mr-2" />
+                Message Player
+              </Button>
+            </div>
+          )}
         </div>
 
         <div>

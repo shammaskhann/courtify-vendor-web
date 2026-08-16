@@ -55,8 +55,8 @@ export async function updateBookingStatus(bookingId: string | number, status: Bo
 }
 
 export interface ManualBookingInput {
-  venueId: string
-  courtId: string
+  venueId: number
+  courtId: number
   bookingDate: string
   startTime: string
   endTime: string

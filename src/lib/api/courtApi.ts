@@ -75,3 +75,9 @@ export async function deleteCourt(venueId: string, courtId: string): Promise<{ s
   if (res.error) throw new Error(res.error)
   return { success: true }
 }
+
+export async function getCourtOccupiedSlotsRange(courtId: string, startDate: string, endDate: string): Promise<Record<string, { startTime: string, endTime: string }[]>> {
+  const res = await api.get<Record<string, { startTime: string, endTime: string }[]>>(`/vendor-booking/court/${courtId}/occupied-slots?startDate=${startDate}&endDate=${endDate}`)
+  if (res.error) throw new Error(res.error)
+  return res.data as Record<string, { startTime: string, endTime: string }[]>
+}

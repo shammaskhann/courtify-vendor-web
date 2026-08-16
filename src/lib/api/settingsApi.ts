@@ -23,13 +23,13 @@ export interface UserProfile {
 }
 
 export async function getVendorProfile(): Promise<UserProfile> {
-  const res = await api.get<UserProfile>('/users/profile')
+  const res = await api.get<UserProfile>('/court-owner/profile')
   if (res.error) throw new Error(res.error)
   return res.data as UserProfile
 }
 
 export async function updateVendorProfile(data: VendorProfileInput): Promise<void> {
-  const res = await api.patch('/users/update', data)
+  const res = await api.patch('/court-owner/profile', data)
   if (res.error) throw new Error(res.error)
 }
 

@@ -133,11 +133,11 @@ export function ManualBookingForm({ isOpen, onClose, venues, onCreated }: Manual
     try {
       setIsSubmitting(true)
       await createManualBooking({
-        venueId: form.venueId,
-        courtId: form.courtId,
+        venueId: Number(form.venueId),
+        courtId: Number(form.courtId),
         bookingDate: form.bookingDate,
-        startTime: toApiTime(form.startTime),
-        endTime: toApiTime(addMinutes(form.startTime, Number(form.duration))),
+        startTime: `${form.startTime}:00`,
+        endTime: `${addMinutes(form.startTime, Number(form.duration))}:00`,
         customerName: form.customerName.trim(),
         customerContact: form.customerContact.trim(),
         customerEmail: form.customerEmail.trim() || undefined,

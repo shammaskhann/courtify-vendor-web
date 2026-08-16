@@ -266,3 +266,32 @@ export interface PageResponse<T> {
   totalPages: number
   last: boolean
 }
+
+// ==========================================
+// CHAT MODELS
+// ==========================================
+
+export interface ChatMessageDto {
+  id: number
+  threadId: number
+  senderId: number
+  senderName: string
+  content: string
+  messageType: 'TEXT' | 'IMAGE' | 'FILE'
+  attachmentUrl?: string | null
+  isRead: boolean
+  createdAt: string
+}
+
+export interface ChatThreadDto {
+  id: number
+  threadType: string // e.g. "BOOKING"
+  referenceId: number
+  participantOneId: number
+  participantOneName: string
+  participantTwoId: number
+  participantTwoName: string
+  latestMessage?: ChatMessageDto | null
+  unreadCount: number
+  updatedAt: string
+}

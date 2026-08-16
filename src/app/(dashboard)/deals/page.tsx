@@ -9,9 +9,10 @@ import { StatusBadge } from '@/components/ui/StatusBadge'
 import { SlideOver } from '@/components/ui/SlideOver'
 import { ConfirmationModal } from '@/components/ui/ConfirmationModal'
 import { DealForm } from '@/components/deals/DealForm'
-import { Plus, Tag, Edit, Trash2 } from 'lucide-react'
-import { getDeals, createDeal, updateDeal, deleteDeal } from '@/lib/api/dealApi'
+import { Plus, Tag, Edit, Trash2, Power } from 'lucide-react'
+import { getDeals, createDeal, updateDeal, deleteDeal, toggleDealActive } from '@/lib/api/dealApi'
 import type { Deal } from '@/types/models'
+import toast from 'react-hot-toast'
 
 export default function DealsPage() {
   const [deals, setDeals] = useState<Deal[]>([])
@@ -38,6 +39,7 @@ export default function DealsPage() {
       setTotal(res.total)
     } catch (error) {
       console.error('Failed to fetch deals:', error)
+      toast.error('Failed to fetch deals')
     } finally {
       setIsLoading(false)
     }
@@ -69,17 +71,30 @@ export default function DealsPage() {
     setDealToDelete(id)
   }
 
+  const handleToggleStatus = async (id: string) => {
+    try {
+      await toggleDealActive(id)
+      toast.success('Deal status updated')
+      await fetchData()
+    } catch (error: any) {
+      console.error('Failed to toggle deal:', error)
+      toast.error(error.message || 'Failed to update status')
+    }
+  }
+
   const confirmDelete = async () => {
     if (!dealToDelete) return
     try {
       setIsDeleting(true)
       await deleteDeal(dealToDelete)
+      toast.success('Deal deleted successfully')
       await fetchData()
-      setDealToDelete(null)
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to delete deal:', error)
+      toast.error(error.message || 'Failed to delete deal')
     } finally {
       setIsDeleting(false)
+      setDealToDelete(null)
     }
   }
 
@@ -87,13 +102,16 @@ export default function DealsPage() {
     try {
       if (editingDeal) {
         await updateDeal(editingDeal.id, data)
+        toast.success('Deal updated successfully')
       } else {
         await createDeal(data)
+        toast.success('Deal created successfully')
       }
       setIsFormOpen(false)
       await fetchData()
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to save deal:', error)
+      toast.error(error.message || 'Failed to save deal')
       throw error
     }
   }
@@ -182,6 +200,15 @@ export default function DealsPage() {
       align: 'right' as const,
       render: (deal: Deal) => (
         <div className="flex justify-end gap-2">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className={`h-8 w-8 ${deal.isActive ? 'text-success hover:bg-success-bg' : 'text-secondary hover:text-primary'}`}
+            onClick={() => handleToggleStatus(deal.id)}
+            title={deal.isActive ? "Deactivate Deal" : "Activate Deal"}
+          >
+            <Power size={16} />
+          </Button>
           <Button variant="ghost" size="icon" className="h-8 w-8 text-secondary hover:text-primary" onClick={() => handleEdit(deal.id)}>
             <Edit size={16} />
           </Button>

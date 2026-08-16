@@ -196,24 +196,44 @@ export function CourtForm({ initialData, venues, preselectedVenueId, onSubmit, o
 
       if (formData.pricingType === 'CONSTANT') {
         payload.constantPriceOffPeak = num(formData.constantPriceOffPeak)
-        if (isPeakEnabled) payload.constantPricePeak = num(formData.constantPricePeak)
+        payload.constantPricePeak = isPeakEnabled ? num(formData.constantPricePeak) : null
+        
+        // Nullify others
+        payload.weekdayPriceOffPeak = null
+        payload.weekdayPricePeak = null
+        payload.weekendPriceOffPeak = null
+        payload.weekendPricePeak = null
+        payload.pricePerDayOffPeak = null
+        payload.pricePerDayPeak = null
       } else if (formData.pricingType === 'WEEKDAY_WEEKEND') {
         payload.weekdayPriceOffPeak = num(formData.weekdayPriceOffPeak)
         payload.weekendPriceOffPeak = num(formData.weekendPriceOffPeak)
-        if (isPeakEnabled) {
-          payload.weekdayPricePeak = num(formData.weekdayPricePeak)
-          payload.weekendPricePeak = num(formData.weekendPricePeak)
-        }
+        payload.weekdayPricePeak = isPeakEnabled ? num(formData.weekdayPricePeak) : null
+        payload.weekendPricePeak = isPeakEnabled ? num(formData.weekendPricePeak) : null
+        
+        // Nullify others
+        payload.constantPriceOffPeak = null
+        payload.constantPricePeak = null
+        payload.pricePerDayOffPeak = null
+        payload.pricePerDayPeak = null
       } else if (formData.pricingType === 'PER_DAY') {
         payload.pricePerDayOffPeak = {}
-        payload.pricePerDayPeak = {}
+        payload.pricePerDayPeak = isPeakEnabled ? {} : null
+        
         formData.openWeekdays.forEach((day: string) => {
           payload.pricePerDayOffPeak[day] = num(formData.pricePerDayOffPeak[day])
           if (isPeakEnabled) {
             payload.pricePerDayPeak[day] = num(formData.pricePerDayPeak[day])
           }
         })
-        if (!isPeakEnabled) payload.pricePerDayPeak = null
+        
+        // Nullify others
+        payload.constantPriceOffPeak = null
+        payload.constantPricePeak = null
+        payload.weekdayPriceOffPeak = null
+        payload.weekdayPricePeak = null
+        payload.weekendPriceOffPeak = null
+        payload.weekendPricePeak = null
       }
 
       await onSubmit(payload)
