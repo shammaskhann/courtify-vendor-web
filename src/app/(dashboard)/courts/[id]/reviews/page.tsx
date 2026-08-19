@@ -6,7 +6,6 @@ import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import { ArrowLeft, MessageSquarePlus, Edit3, Loader2 } from 'lucide-react'
 import { getCourtReviews } from '@/lib/api/reviewApi'
 import { getCourtById } from '@/lib/api/courtApi'
-import { PageHeader } from '@/components/ui/PageHeader'
 import { ReplyToReviewModal } from '@/components/reviews/ReplyToReviewModal'
 import type { Review } from '@/types/models'
 
@@ -32,7 +31,7 @@ export default function CourtReviewsPage({ params }: { params: Promise<{ id: str
     queryKey: ['court-reviews', courtId, sort],
     queryFn: ({ pageParam = 0 }) => getCourtReviews(courtId, { page: pageParam, size: 10, sort }),
     getNextPageParam: (lastPage) => {
-      if (!lastPage.last) {
+      if (lastPage.data.length === lastPage.pageSize) {
         return lastPage.page + 1
       }
       return undefined
@@ -40,8 +39,8 @@ export default function CourtReviewsPage({ params }: { params: Promise<{ id: str
     initialPageParam: 0
   })
 
-  const reviews = data?.pages.flatMap(page => page.content) || []
-  const totalElements = data?.pages[0]?.totalElements || 0
+  const reviews = data?.pages.flatMap(page => page.data) || []
+  const totalElements = data?.pages[0]?.total || 0
   const avgRating = court?.avgRating || 0
 
   const renderStars = (rating: number) => {

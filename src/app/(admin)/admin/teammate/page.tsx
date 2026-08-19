@@ -6,7 +6,7 @@ import { DataTable } from '@/components/ui/DataTable'
 import { Button } from '@/components/ui/Button'
 import { ConfirmationModal } from '@/components/ui/ConfirmationModal'
 import { getPendingTeammatePosts, updateTeammatePostStatus } from '@/lib/api/adminApi'
-import { CheckCircle, XCircle, Trash2, RefreshCw } from 'lucide-react'
+import { CheckCircle, Trash2, RefreshCw } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { format } from 'date-fns'
 

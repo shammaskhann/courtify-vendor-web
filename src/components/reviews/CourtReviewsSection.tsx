@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Star, MessageSquarePlus, Edit3 } from 'lucide-react'
+import { MessageSquarePlus, Edit3 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import type { Review } from '@/types/models'
 import { ReplyToReviewModal } from './ReplyToReviewModal'
@@ -39,7 +39,7 @@ export function CourtReviewsSection({ courtId, avgRating = 0, reviewCount = 0, l
             </div>
           </div>
           <Button 
-            variant="outline" 
+            variant="secondary" 
             onClick={() => router.push(`/courts/${courtId}/reviews`)}
             disabled={reviewCount === 0}
           >
@@ -58,10 +58,10 @@ export function CourtReviewsSection({ courtId, avgRating = 0, reviewCount = 0, l
                 <div className="flex justify-between items-start">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-full bg-brand/20 text-brand flex items-center justify-center font-semibold text-sm">
-                      {review.userName.charAt(0).toUpperCase()}
+                      {review.userName ? review.userName.charAt(0).toUpperCase() : 'U'}
                     </div>
                     <div>
-                      <p className="font-medium text-primary text-sm">{review.userName}</p>
+                      <p className="font-medium text-primary text-sm">{review.userName || 'Unknown User'}</p>
                       <p className="text-xs text-secondary">{new Date(review.createdAt).toLocaleDateString()}</p>
                     </div>
                   </div>
