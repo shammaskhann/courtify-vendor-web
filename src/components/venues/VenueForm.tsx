@@ -15,14 +15,21 @@ interface VenueFormProps {
   initialData?: any
   onSubmit: (data: any) => Promise<void>
   onCancel: () => void
+  editSection?: 'basic' | 'location' | 'amenities' | 'hours' | 'image' | null
 }
 
-export function VenueForm({ initialData, onSubmit, onCancel }: VenueFormProps) {
+export function VenueForm({ initialData, onSubmit, onCancel, editSection }: VenueFormProps) {
   const { cities, amenities } = useMetadata()
   const isEditing = !!initialData
-  const totalSteps = isEditing ? 4 : 5
-  
-  const [step, setStep] = useState(1)
+  const totalSteps = editSection ? 1 : (isEditing ? 4 : 5)
+  const initialStep = editSection === 'basic' ? 1 
+    : editSection === 'location' ? 2 
+    : editSection === 'amenities' ? 3 
+    : editSection === 'hours' ? 4 
+    : editSection === 'image' ? 5 
+    : 1
+    
+  const [step, setStep] = useState(initialStep)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   
@@ -127,7 +134,7 @@ export function VenueForm({ initialData, onSubmit, onCancel }: VenueFormProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    if (step < totalSteps) {
+    if (!editSection && step < totalSteps) {
       handleNext()
       return
     }
@@ -140,7 +147,7 @@ export function VenueForm({ initialData, onSubmit, onCancel }: VenueFormProps) {
       
       let imageUrl = formData.image
       
-      if (!isEditing) {
+      if (!isEditing && !editSection) {
         if (!selectedFile) {
           setError('Please select a venue image')
           setIsSubmitting(false)
@@ -157,14 +164,42 @@ export function VenueForm({ initialData, onSubmit, onCancel }: VenueFormProps) {
           return
         }
         setUploadingImage(false)
+      } else if (editSection === 'image') {
+        if (selectedFile) {
+          try {
+            setUploadingImage(true)
+            imageUrl = await uploadVenueImage(selectedFile)
+          } catch (uploadErr) {
+            setError('Failed to upload image: ' + (uploadErr as Error).message)
+            setUploadingImage(false)
+            setIsSubmitting(false)
+            return
+          }
+          setUploadingImage(false)
+        }
       }
 
-      await onSubmit({
-        ...formData,
-        image: imageUrl,
-        openingTime: formatTimeForApi(formData.openingTime),
-        closingTime: formatTimeForApi(formData.closingTime)
-      })
+      let payload: any = {}
+      if (editSection === 'basic') {
+        payload = { name: formData.name, description: formData.description }
+      } else if (editSection === 'location') {
+        payload = { address: formData.address, city: formData.city, latitude: formData.latitude, longitude: formData.longitude }
+      } else if (editSection === 'amenities') {
+        payload = { amenities: formData.amenities }
+      } else if (editSection === 'hours') {
+        payload = { openingTime: formatTimeForApi(formData.openingTime), closingTime: formatTimeForApi(formData.closingTime) }
+      } else if (editSection === 'image') {
+        payload = { image: imageUrl }
+      } else {
+        payload = {
+          ...formData,
+          image: imageUrl,
+          openingTime: formatTimeForApi(formData.openingTime),
+          closingTime: formatTimeForApi(formData.closingTime)
+        }
+      }
+
+      await onSubmit(payload)
     } catch (err) {
       setError((err as Error).message || 'Failed to save venue')
     } finally {
@@ -246,19 +281,21 @@ export function VenueForm({ initialData, onSubmit, onCancel }: VenueFormProps) {
   return (
     <>
       <form onSubmit={handleSubmit} className="flex flex-col h-full">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex gap-2">
-          {Array.from({ length: totalSteps }, (_, i) => i + 1).map((s) => (
-            <div
-              key={s}
-              className={`h-2 w-8 sm:w-12 rounded-pill ${
-                s <= step ? 'bg-brand' : 'bg-surface-variant'
-              } transition-colors duration-base`}
-            />
-          ))}
+      {!editSection && (
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex gap-2">
+            {Array.from({ length: totalSteps }, (_, i) => i + 1).map((s) => (
+              <div
+                key={s}
+                className={`h-2 w-8 sm:w-12 rounded-pill ${
+                  s <= step ? 'bg-brand' : 'bg-surface-variant'
+                } transition-colors duration-base`}
+              />
+            ))}
+          </div>
+          <span className="text-caption text-secondary">Step {step} of {totalSteps}</span>
         </div>
-        <span className="text-caption text-secondary">Step {step} of {totalSteps}</span>
-      </div>
+      )}
       
       {error && (
         <div className="mb-4 p-3 bg-error-bg border border-error/20 text-error text-body-sm rounded-lg">
@@ -455,10 +492,10 @@ export function VenueForm({ initialData, onSubmit, onCancel }: VenueFormProps) {
         <Button
           type="button"
           variant="secondary"
-          onClick={step === 1 ? onCancel : handlePrev}
+          onClick={(!editSection && step === 1) || editSection ? onCancel : handlePrev}
           disabled={isSubmitting || uploadingImage}
         >
-          {step === 1 ? 'Cancel' : 'Back'}
+          {(!editSection && step === 1) || editSection ? 'Cancel' : 'Back'}
         </Button>
         <Button
           type="submit"
@@ -466,7 +503,7 @@ export function VenueForm({ initialData, onSubmit, onCancel }: VenueFormProps) {
           isLoading={isSubmitting || uploadingImage}
           disabled={isSubmitting || uploadingImage}
         >
-          {step === totalSteps ? (isEditing ? 'Save Changes' : 'Create Venue') : 'Continue'}
+          {(!editSection && step === totalSteps) || editSection ? (isEditing ? 'Save Changes' : 'Create Venue') : 'Continue'}
         </Button>
       </div>
     </form>

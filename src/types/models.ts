@@ -41,22 +41,38 @@ export type NotificationType = (typeof NOTIFICATION_TYPES)[number]
 export interface Venue {
   id: string
   name: string
-  description: string
   address: string
   city: string
-  latitude: number
-  longitude: number
-  amenities: string[]
   openingTime: string
   closingTime: string
-  image: string
-  venueImage?: string
+  description?: string
+  amenities: string[]
   courtCount: number
   isApproved: boolean
   isDisabled: boolean
   createdAt: string
   updatedAt: string
-  ownerId: string
+  latitude?: number
+  longitude?: number
+  venueImage?: string
+  image?: string
+  ownerId?: string | number
+  courts?: Court[]
+}
+
+export interface Review {
+  id: number
+  userId: number
+  userName: string
+  courtId: number | string
+  courtName: string
+  bookingId: number
+  rating: number
+  comment?: string | null
+  vendorReply?: string | null
+  createdAt: string
+  updatedAt?: string | null
+  repliedAt?: string | null
 }
 
 export interface Court {
@@ -235,7 +251,7 @@ export interface AdminVenue {
   ownerName?: string
   ownerEmail?: string
   contactNo?: string
-  // Extend as needed
+  courts?: Court[]
 }
 
 export interface CommonItem {

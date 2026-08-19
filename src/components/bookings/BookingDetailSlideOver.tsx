@@ -17,20 +17,20 @@ interface BookingDetailSlideOverProps {
 
 export function BookingDetailSlideOver({ booking, isOpen, onClose, onStatusChange }: BookingDetailSlideOverProps) {
   const router = useRouter()
-  const [isUpdating, setIsUpdating] = useState(false)
+  const [updatingStatus, setUpdatingStatus] = useState<Booking['status'] | null>(null)
 
   if (!booking) return null
 
   const handleStatusChange = async (status: Booking['status']) => {
     try {
-      setIsUpdating(true)
+      setUpdatingStatus(status)
       await updateBookingStatus(booking.id, status)
       onStatusChange()
       onClose()
     } catch (error) {
       console.error('Failed to update booking status:', error)
     } finally {
-      setIsUpdating(false)
+      setUpdatingStatus(null)
     }
   }
 
@@ -41,16 +41,16 @@ export function BookingDetailSlideOver({ booking, isOpen, onClose, onStatusChang
       </Button>
       {booking.status === 'PENDING' && (
         <>
-          <Button variant="destructive" onClick={() => handleStatusChange('REJECTED')} isLoading={isUpdating}>
+          <Button variant="destructive" onClick={() => handleStatusChange('REJECTED')} isLoading={updatingStatus === 'REJECTED'}>
             Reject
           </Button>
-          <Button variant="primary" onClick={() => handleStatusChange('CONFIRMED')} isLoading={isUpdating}>
+          <Button variant="primary" onClick={() => handleStatusChange('CONFIRMED')} isLoading={updatingStatus === 'CONFIRMED'}>
             Confirm Booking
           </Button>
         </>
       )}
       {booking.status === 'CONFIRMED' && (
-        <Button variant="primary" onClick={() => handleStatusChange('COMPLETED')} isLoading={isUpdating}>
+        <Button variant="primary" onClick={() => handleStatusChange('COMPLETED')} isLoading={updatingStatus === 'COMPLETED'}>
           Mark as Completed
         </Button>
       )}
@@ -156,7 +156,7 @@ export function BookingDetailSlideOver({ booking, isOpen, onClose, onStatusChang
                   if (!playerId) return
                   try {
                     const thread = await initiateThread('BOOKING', booking.id, playerId)
-                    router.push(`/vendor/messages?threadId=${thread.id}`)
+                    router.push(`/messages?threadId=${thread.id}`)
                     onClose()
                   } catch (err) {
                     console.error('Failed to initiate chat', err)

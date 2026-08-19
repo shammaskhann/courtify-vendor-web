@@ -212,7 +212,7 @@ export default function MessagesPage() {
                   return (
                     <button
                       key={thread.id}
-                      onClick={() => router.push(`/vendor/messages?threadId=${thread.id}`)}
+                      onClick={() => router.push(`/messages?threadId=${thread.id}`)}
                       className={`w-full text-left p-3 rounded-xl transition-all duration-200 group flex items-center gap-3 relative ${isActive ? 'bg-[#212124]' : 'hover:bg-[#1C1C1F]'
                         }`}
                     >

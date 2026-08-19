@@ -65,7 +65,7 @@ export async function createCourt(venueId: string, data: Omit<Court, 'id' | 'ven
 }
 
 export async function updateCourt(venueId: string, courtId: string, data: Partial<Court>): Promise<Court> {
-  const res = await api.put<Court>(`/courts/court-owner/venues/${venueId}/courts/${courtId}`, data)
+  const res = await api.put<Court>(`/court-owner/courts/${courtId}/venue/${venueId}`, data)
   if (res.error) throw new Error(res.error)
   return res.data as Court
 }

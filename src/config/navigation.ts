@@ -58,7 +58,7 @@ export const primaryNavigation: NavItem[] = [
   },
   {
     label: 'Messages',
-    href: '/vendor/messages',
+    href: '/messages',
     icon: MessageSquare,
   },
   {
@@ -109,6 +109,16 @@ export const adminNavigation: NavItem[] = [
     label: 'Marketplace',
     href: '/admin/marketplace',
     icon: Store,
+  },
+  {
+    label: 'Deals',
+    href: '/admin/deals',
+    icon: Tag,
+  },
+  {
+    label: 'Teammates',
+    href: '/admin/teammate',
+    icon: Users,
   },
   {
     label: 'Metadata',

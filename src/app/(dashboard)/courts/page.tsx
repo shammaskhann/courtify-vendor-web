@@ -174,6 +174,27 @@ export default function CourtsPage() {
       ),
     },
     {
+      header: 'Rating',
+      render: (court: Court) => (
+        <div 
+          className="flex items-center gap-1 cursor-pointer hover:bg-surface-variant p-1 -m-1 rounded transition-colors"
+          onClick={(e) => {
+            e.stopPropagation()
+            router.push(`/courts/${court.id}/reviews`)
+          }}
+        >
+          <span className="text-brand">★</span>
+          {court.reviewCount && court.reviewCount > 0 ? (
+            <span className="text-sm font-medium text-primary">
+              {court.avgRating?.toFixed(1) || '0.0'} <span className="text-secondary font-normal">({court.reviewCount})</span>
+            </span>
+          ) : (
+            <span className="text-xs text-secondary">No reviews</span>
+          )}
+        </div>
+      )
+    },
+    {
       header: 'Status',
       render: (court: Court) => (
         <StatusBadge status={!court.isDisabled ? 'ACTIVE' : 'INACTIVE'} />
