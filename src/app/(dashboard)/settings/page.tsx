@@ -13,6 +13,7 @@ import {
   type UserProfile
 } from '@/lib/api/settingsApi'
 import { Building2, Mail, Phone, Lock, CreditCard, CheckCircle2 } from 'lucide-react'
+import toast from 'react-hot-toast'
 
 type TabId = 'profile' | 'account' | 'payments'
 
@@ -107,13 +108,11 @@ export default function SettingsPage() {
   const handlePasswordSave = async (e: React.FormEvent) => {
     e.preventDefault()
     if (passwords.newPassword !== passwords.confirmPassword) {
-      setError('New passwords do not match.')
+      toast.error('New passwords do not match.')
       return
     }
     
     setIsSaving(true)
-    setError(null)
-    setSuccess(null)
     
     try {
       await changePassword({
@@ -121,9 +120,9 @@ export default function SettingsPage() {
         newPassword: passwords.newPassword,
       })
       setPasswords({ currentPassword: '', newPassword: '', confirmPassword: '' })
-      setSuccess('Password updated.')
+      toast.success('Password updated successfully')
     } catch (err) {
-      setError((err as Error).message || 'Could not save your changes.')
+      toast.error((err as Error).message || 'Could not save your changes.')
     } finally {
       setIsSaving(false)
     }

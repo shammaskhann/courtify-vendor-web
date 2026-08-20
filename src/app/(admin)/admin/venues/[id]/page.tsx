@@ -7,7 +7,7 @@ import { DataTable } from '@/components/ui/DataTable'
 import { ConfirmationModal } from '@/components/ui/ConfirmationModal'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { ArrowLeft, CheckCircle, XCircle, RotateCcw, Building2, User, Layers } from 'lucide-react'
-import { getVenueById, approveVenue, disableVenue, enableVenue, getAdminCourtsByVenue, approveCourt, disableCourt, enableCourt } from '@/lib/api/adminApi'
+import { getVenueById, approveVenue, disableVenue, enableVenue, approveCourt, disableCourt, enableCourt } from '@/lib/api/adminApi'
 import type { AdminVenue, Court } from '@/types/models'
 
 export default function AdminVenueDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -22,12 +22,9 @@ export default function AdminVenueDetailPage({ params }: { params: Promise<{ id:
   const loadData = async () => {
     setLoading(true)
     try {
-      const [venueRes, courtsRes] = await Promise.allSettled([
-        getVenueById(id),
-        getAdminCourtsByVenue(id)
-      ])
-      if (venueRes.status === 'fulfilled') setVenue(venueRes.value)
-      if (courtsRes.status === 'fulfilled') setCourts(courtsRes.value.data || [])
+      const venueRes = await getVenueById(id)
+      setVenue(venueRes)
+      setCourts(venueRes.courts || [])
     } catch (err) {
       console.error(String(err))
     } finally {

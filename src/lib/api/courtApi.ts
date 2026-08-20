@@ -65,7 +65,7 @@ export async function createCourt(venueId: string, data: Omit<Court, 'id' | 'ven
 }
 
 export async function updateCourt(venueId: string, courtId: string, data: Partial<Court>): Promise<Court> {
-  const res = await api.put<Court>(`/courts/court-owner/venues/${venueId}/courts/${courtId}`, data)
+  const res = await api.put<Court>(`/court-owner/courts/${courtId}/venue/${venueId}`, data)
   if (res.error) throw new Error(res.error)
   return res.data as Court
 }
@@ -74,4 +74,10 @@ export async function deleteCourt(venueId: string, courtId: string): Promise<{ s
   const res = await api.delete<{ success: boolean }>(`/court-owner/courts/venues/${venueId}/court/${courtId}`)
   if (res.error) throw new Error(res.error)
   return { success: true }
+}
+
+export async function getCourtOccupiedSlotsRange(courtId: string, startDate: string, endDate: string): Promise<Record<string, { startTime: string, endTime: string }[]>> {
+  const res = await api.get<Record<string, { startTime: string, endTime: string }[]>>(`/vendor-booking/court/${courtId}/occupied-slots?startDate=${startDate}&endDate=${endDate}`)
+  if (res.error) throw new Error(res.error)
+  return res.data as Record<string, { startTime: string, endTime: string }[]>
 }

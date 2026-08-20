@@ -12,6 +12,7 @@ import {
   Store,
   Database,
   Star,
+  MessageSquare
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
@@ -54,6 +55,11 @@ export const primaryNavigation: NavItem[] = [
     label: 'Customers',
     href: '/customers',
     icon: Users,
+  },
+  {
+    label: 'Messages',
+    href: '/messages',
+    icon: MessageSquare,
   },
   {
     label: 'Deals',
@@ -103,6 +109,16 @@ export const adminNavigation: NavItem[] = [
     label: 'Marketplace',
     href: '/admin/marketplace',
     icon: Store,
+  },
+  {
+    label: 'Deals',
+    href: '/admin/deals',
+    icon: Tag,
+  },
+  {
+    label: 'Teammates',
+    href: '/admin/teammate',
+    icon: Users,
   },
   {
     label: 'Metadata',

@@ -67,3 +67,25 @@ export function suggestBookingPrice(
 
   return Math.round((rate * durationMinutes) / 60)
 }
+
+/** Returns the lowest off-peak rate for the court to display as a base price. */
+export function getCourtBasePrice(court: Court): number {
+  switch (court.pricingType) {
+    case 'CONSTANT':
+      return court.constantPriceOffPeak || 0
+    case 'WEEKDAY_WEEKEND': {
+      const wd = court.weekdayPriceOffPeak || 0
+      const we = court.weekendPriceOffPeak || 0
+      if (wd > 0 && we > 0) return Math.min(wd, we)
+      return wd || we || 0
+    }
+    case 'PER_DAY':
+      if (court.pricePerDayOffPeak) {
+        const prices = Object.values(court.pricePerDayOffPeak).filter((p): p is number => typeof p === 'number' && p > 0)
+        if (prices.length > 0) return Math.min(...prices)
+      }
+      return 0
+    default:
+      return 0
+  }
+}

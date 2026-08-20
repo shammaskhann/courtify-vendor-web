@@ -15,9 +15,10 @@ interface CourtFormProps {
   preselectedVenueId?: string
   onSubmit: (data: any) => Promise<void>
   onCancel: () => void
+  editSection?: 'basic' | 'pricing' | 'schedule' | 'images' | null
 }
 
-export function CourtForm({ initialData, venues, preselectedVenueId, onSubmit, onCancel }: CourtFormProps) {
+export function CourtForm({ initialData, venues, preselectedVenueId, onSubmit, onCancel, editSection }: CourtFormProps) {
   const { sportTypes } = useMetadata()
   const [step, setStep] = useState(1)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -91,7 +92,7 @@ export function CourtForm({ initialData, venues, preselectedVenueId, onSubmit, o
     setError(null)
     
     // Step 1 Validation
-    if (step === 1 && !formData.venueId) {
+    if (!editSection && step === 1 && !formData.venueId) {
       setError('Please select a venue.')
       return
     }
@@ -143,12 +144,14 @@ export function CourtForm({ initialData, venues, preselectedVenueId, onSubmit, o
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (step < 5) {
+    
+    // If not in single-section edit mode and we haven't reached the final step
+    if (!editSection && step < 5) {
       handleNext()
       return
     }
     
-    if (formData.images.length === 0 && pendingFiles.length === 0) {
+    if ((!editSection || editSection === 'images') && formData.images.length === 0 && pendingFiles.length === 0) {
       setError('Please upload at least one image.')
       return
     }
@@ -196,24 +199,44 @@ export function CourtForm({ initialData, venues, preselectedVenueId, onSubmit, o
 
       if (formData.pricingType === 'CONSTANT') {
         payload.constantPriceOffPeak = num(formData.constantPriceOffPeak)
-        if (isPeakEnabled) payload.constantPricePeak = num(formData.constantPricePeak)
+        payload.constantPricePeak = isPeakEnabled ? num(formData.constantPricePeak) : null
+        
+        // Nullify others
+        payload.weekdayPriceOffPeak = null
+        payload.weekdayPricePeak = null
+        payload.weekendPriceOffPeak = null
+        payload.weekendPricePeak = null
+        payload.pricePerDayOffPeak = null
+        payload.pricePerDayPeak = null
       } else if (formData.pricingType === 'WEEKDAY_WEEKEND') {
         payload.weekdayPriceOffPeak = num(formData.weekdayPriceOffPeak)
         payload.weekendPriceOffPeak = num(formData.weekendPriceOffPeak)
-        if (isPeakEnabled) {
-          payload.weekdayPricePeak = num(formData.weekdayPricePeak)
-          payload.weekendPricePeak = num(formData.weekendPricePeak)
-        }
+        payload.weekdayPricePeak = isPeakEnabled ? num(formData.weekdayPricePeak) : null
+        payload.weekendPricePeak = isPeakEnabled ? num(formData.weekendPricePeak) : null
+        
+        // Nullify others
+        payload.constantPriceOffPeak = null
+        payload.constantPricePeak = null
+        payload.pricePerDayOffPeak = null
+        payload.pricePerDayPeak = null
       } else if (formData.pricingType === 'PER_DAY') {
         payload.pricePerDayOffPeak = {}
-        payload.pricePerDayPeak = {}
+        payload.pricePerDayPeak = isPeakEnabled ? {} : null
+        
         formData.openWeekdays.forEach((day: string) => {
           payload.pricePerDayOffPeak[day] = num(formData.pricePerDayOffPeak[day])
           if (isPeakEnabled) {
             payload.pricePerDayPeak[day] = num(formData.pricePerDayPeak[day])
           }
         })
-        if (!isPeakEnabled) payload.pricePerDayPeak = null
+        
+        // Nullify others
+        payload.constantPriceOffPeak = null
+        payload.constantPricePeak = null
+        payload.weekdayPriceOffPeak = null
+        payload.weekdayPricePeak = null
+        payload.weekendPriceOffPeak = null
+        payload.weekendPricePeak = null
       }
 
       await onSubmit(payload)
@@ -275,29 +298,31 @@ export function CourtForm({ initialData, venues, preselectedVenueId, onSubmit, o
 
   return (
     <>
-      {/* Steps Header */}
-      <div className="flex justify-between items-center mb-8 relative">
-        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-0.5 bg-border -z-10" />
-        {[
-          { num: 1, label: 'Venue' },
-          { num: 2, label: 'Details' },
-          { num: 3, label: 'Pricing' },
-          { num: 4, label: 'Schedule' },
-          { num: 5, label: 'Images' },
-        ].map((s) => (
-          <div key={s.num} className="flex flex-col items-center gap-2 bg-surface px-2">
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-body-sm font-semibold transition-colors ${
-              step === s.num ? 'bg-brand text-white' : 
-              step > s.num ? 'bg-brand/20 text-brand' : 'bg-surface-variant text-secondary'
-            }`}>
-              {step > s.num ? <Check size={16} /> : s.num}
+      {/* Steps Header (Hidden when editing specific section) */}
+      {!editSection && (
+        <div className="flex justify-between items-center mb-8 relative">
+          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-0.5 bg-border -z-10" />
+          {[
+            { num: 1, label: 'Venue' },
+            { num: 2, label: 'Details' },
+            { num: 3, label: 'Pricing' },
+            { num: 4, label: 'Schedule' },
+            { num: 5, label: 'Images' },
+          ].map((s) => (
+            <div key={s.num} className="flex flex-col items-center gap-2 bg-surface px-2">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-body-sm font-semibold transition-colors ${
+                step === s.num ? 'bg-brand text-white' : 
+                step > s.num ? 'bg-brand/20 text-brand' : 'bg-surface-variant text-secondary'
+              }`}>
+                {step > s.num ? <Check size={16} /> : s.num}
+              </div>
+              <span className={`text-caption font-medium hidden sm:block ${step >= s.num ? 'text-primary' : 'text-secondary'}`}>
+                {s.label}
+              </span>
             </div>
-            <span className={`text-caption font-medium hidden sm:block ${step >= s.num ? 'text-primary' : 'text-secondary'}`}>
-              {s.label}
-            </span>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       {error && (
         <div className="p-3 mb-6 rounded-lg bg-error/10 border border-error/20 text-error-text text-body-sm">
@@ -308,8 +333,8 @@ export function CourtForm({ initialData, venues, preselectedVenueId, onSubmit, o
       <form onSubmit={handleSubmit} className="flex flex-col h-full">
         <div className="flex-1 overflow-y-auto pr-2 pb-4">
           
-          {/* STEP 1: Venue */}
-          {step === 1 && (
+          {/* STEP 1: Venue (Only in create flow) */}
+          {!editSection && step === 1 && (
             <div className="space-y-4">
               <h3 className="text-h4 font-semibold text-primary mb-1">Select Venue</h3>
               <p className="text-body-sm text-secondary mb-4">Which venue does this court belong to?</p>
@@ -325,8 +350,8 @@ export function CourtForm({ initialData, venues, preselectedVenueId, onSubmit, o
             </div>
           )}
 
-          {/* STEP 2: Basic Details */}
-          {step === 2 && (
+          {/* STEP 2: Basic Details (or editSection basic) */}
+          {(!editSection && step === 2 || editSection === 'basic') && (
             <div className="space-y-6">
               <div>
                 <h3 className="text-h4 font-semibold text-primary mb-1">Court Details</h3>
@@ -390,8 +415,8 @@ export function CourtForm({ initialData, venues, preselectedVenueId, onSubmit, o
             </div>
           )}
 
-          {/* STEP 3: Pricing */}
-          {step === 3 && (
+          {/* STEP 3: Pricing (or editSection pricing) */}
+          {(!editSection && step === 3 || editSection === 'pricing') && (
             <div className="space-y-6">
               <div>
                 <h3 className="text-h4 font-semibold text-primary mb-1">Pricing Configuration</h3>
@@ -557,8 +582,8 @@ export function CourtForm({ initialData, venues, preselectedVenueId, onSubmit, o
             </div>
           )}
 
-          {/* STEP 4: Operating Days */}
-          {step === 4 && (
+          {/* STEP 4: Operating Days (or editSection schedule) */}
+          {(!editSection && step === 4 || editSection === 'schedule') && (
             <div className="space-y-6">
               <div>
                 <h3 className="text-h4 font-semibold text-primary mb-1">Operating Days</h3>
@@ -592,8 +617,8 @@ export function CourtForm({ initialData, venues, preselectedVenueId, onSubmit, o
             </div>
           )}
 
-          {/* STEP 5: Images */}
-          {step === 5 && (
+          {/* STEP 5: Images (or editSection images) */}
+          {(!editSection && step === 5 || editSection === 'images') && (
             <div className="space-y-6">
               <div>
                 <h3 className="text-h4 font-semibold text-primary mb-1">Court Images</h3>
@@ -649,18 +674,18 @@ export function CourtForm({ initialData, venues, preselectedVenueId, onSubmit, o
           <Button
             type="button"
             variant="secondary"
-            onClick={step === 1 ? onCancel : handlePrev}
+            onClick={(editSection || step === 1) ? onCancel : handlePrev}
             disabled={isSubmitting || uploadingImages}
           >
-            {step === 1 ? 'Cancel' : 'Back'}
+            {(editSection || step === 1) ? 'Cancel' : 'Back'}
           </Button>
           <Button
-            type={step === 5 ? "submit" : "button"}
-            onClick={step < 5 ? handleNext : undefined}
+            type={editSection || step === 5 ? "submit" : "button"}
+            onClick={(!editSection && step < 5) ? handleNext : undefined}
             variant="primary"
             isLoading={isSubmitting || uploadingImages}
           >
-            {step === 5 ? (initialData ? 'Save Changes' : 'Create Court') : 'Continue'}
+            {editSection || step === 5 ? (initialData ? 'Save Changes' : 'Create Court') : 'Continue'}
           </Button>
         </div>
       </form>

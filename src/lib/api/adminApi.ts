@@ -50,8 +50,20 @@ export async function enableVenue(id: string | number): Promise<void> {
 
 // ── Courts ────────────────────────────────────────────────────────────────
 
+export async function getAllCourts(page = 0, size = 20): Promise<PaginatedResponse<Court>> {
+  const res = await api.get<any>(`/admin/courts?page=${page}&size=${size}`)
+  if (res.error) throw new Error(res.error)
+  const data = res.data
+  return {
+    data: data?.content || [],
+    total: data?.totalElements || 0,
+    page: data?.page || page,
+    pageSize: data?.size || size
+  }
+}
+
 export async function getAdminCourtsByVenue(venueId: string | number): Promise<PaginatedResponse<Court>> {
-  const res = await api.get<any>(`/admin/venues/${venueId}/courts`)
+  const res = await api.get<any>(`/admin/courts/venues/${venueId}/courts`)
   if (res.error) throw new Error(res.error)
   const data = res.data
   return {
@@ -63,7 +75,7 @@ export async function getAdminCourtsByVenue(venueId: string | number): Promise<P
 }
 
 export async function getPendingCourts(page = 0, size = 50): Promise<PaginatedResponse<Court>> {
-  const res = await api.get<any>(`/admin/venues/courts/pending?page=${page}&size=${size}`)
+  const res = await api.get<any>(`/admin/courts/pending?page=${page}&size=${size}`)
   if (res.error) throw new Error(res.error)
   const data = res.data
   return {
@@ -74,18 +86,34 @@ export async function getPendingCourts(page = 0, size = 50): Promise<PaginatedRe
   }
 }
 
+export async function searchCourts(params: Record<string, any>): Promise<PaginatedResponse<Court>> {
+  const query = new URLSearchParams()
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null) query.append(key, value.toString())
+  })
+  const res = await api.get<any>(`/admin/courts/search?${query.toString()}`)
+  if (res.error) throw new Error(res.error)
+  const data = res.data
+  return {
+    data: data?.content || [],
+    total: data?.totalElements || 0,
+    page: data?.page || 0,
+    pageSize: data?.size || 20
+  }
+}
+
 export async function approveCourt(id: string | number): Promise<void> {
-  const res = await api.put(`/admin/venues/courts/${id}/approve`, {})
+  const res = await api.post(`/admin/courts/${id}/approve`, {})
   if (res.error) throw new Error(res.error)
 }
 
 export async function disableCourt(id: string | number): Promise<void> {
-  const res = await api.put(`/admin/venues/courts/${id}/disable`, {})
+  const res = await api.post(`/admin/courts/${id}/disable`, {})
   if (res.error) throw new Error(res.error)
 }
 
 export async function enableCourt(id: string | number): Promise<void> {
-  const res = await api.put(`/admin/venues/courts/${id}/enable`, {})
+  const res = await api.post(`/admin/courts/${id}/enable`, {})
   if (res.error) throw new Error(res.error)
 }
 
@@ -135,10 +163,144 @@ export async function markUserAsVerified(id: string | number): Promise<void> {
 
 // ── Bookings ──────────────────────────────────────────────────────────────
 
-export async function getAdminBookingsByVenue(venueId: string | number): Promise<PaginatedResponse<Booking> | Booking[]> {
-  const res = await api.get<PaginatedResponse<Booking> | Booking[]>(`/bookings/venue/${venueId}`)
+export async function getAllBookings(params: Record<string, any> = {}): Promise<PaginatedResponse<Booking>> {
+  const query = new URLSearchParams()
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null) query.append(key, value.toString())
+  })
+  const res = await api.get<any>(`/admin/bookings?${query.toString()}`)
   if (res.error) throw new Error(res.error)
-  return res.data as (PaginatedResponse<Booking> | Booking[])
+  const data = res.data
+  return {
+    data: data?.content || [],
+    total: data?.totalElements || 0,
+    page: data?.page || 0,
+    pageSize: data?.size || 20
+  }
+}
+
+export async function getAdminBookingsByVenue(venueId: string | number): Promise<PaginatedResponse<Booking> | Booking[]> {
+  // Keeping this for backwards compatibility, but mapped to the new Search endpoint
+  return getAllBookings({ venueId })
+}
+
+export async function updateBookingStatus(bookingId: string | number, status: string): Promise<void> {
+  const res = await api.patch(`/admin/bookings/${bookingId}/status?status=${status}`, {})
+  if (res.error) throw new Error(res.error)
+}
+
+export async function deleteBooking(bookingId: string | number): Promise<void> {
+  const res = await api.delete(`/admin/bookings/${bookingId}`)
+  if (res.error) throw new Error(res.error)
+}
+
+// ── Reviews ───────────────────────────────────────────────────────────────
+
+export async function getAdminReviews(params: Record<string, any> = {}): Promise<PaginatedResponse<any>> {
+  const query = new URLSearchParams()
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null) query.append(key, value.toString())
+  })
+  const res = await api.get<any>(`/admin/reviews?${query.toString()}`)
+  if (res.error) throw new Error(res.error)
+  const data = res.data
+  return {
+    data: data?.content || [],
+    total: data?.totalElements || 0,
+    page: data?.page || 0,
+    pageSize: data?.size || 20
+  }
+}
+
+export async function getAdminReviewById(reviewId: string | number): Promise<any> {
+  const res = await api.get<any>(`/admin/reviews/${reviewId}`)
+  if (res.error) throw new Error(res.error)
+  return res.data
+}
+
+export async function deleteAdminReview(reviewId: string | number): Promise<void> {
+  const res = await api.delete(`/admin/reviews/${reviewId}`)
+  if (res.error) throw new Error(res.error)
+}
+
+// ── Deals ─────────────────────────────────────────────────────────────────
+
+export async function getAdminDeals(params: Record<string, any> = {}): Promise<PaginatedResponse<any>> {
+  const query = new URLSearchParams()
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null) query.append(key, value.toString())
+  })
+  const res = await api.get<any>(`/admin/deals/all?${query.toString()}`)
+  if (res.error) throw new Error(res.error)
+  const data = res.data
+  return {
+    data: data?.content || [],
+    total: data?.totalElements || 0,
+    page: data?.page || 0,
+    pageSize: data?.size || 20
+  }
+}
+
+// ── Marketplace ───────────────────────────────────────────────────────────
+
+export async function getAdminMarketplaceListings(params: Record<string, any> = {}): Promise<PaginatedResponse<any>> {
+  const query = new URLSearchParams()
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null) query.append(key, value.toString())
+  })
+  const res = await api.get<any>(`/v1/admin/marketplace/listings?${query.toString()}`)
+  if (res.error) throw new Error(res.error)
+  const data = res.data
+  return {
+    data: data?.content || [],
+    total: data?.totalElements || 0,
+    page: data?.page || 0,
+    pageSize: data?.size || 20
+  }
+}
+
+export async function updateMarketplaceListingStatus(id: string | number, status: string): Promise<void> {
+  const res = await api.patch(`/v1/admin/marketplace/listings/${id}/status`, { status })
+  if (res.error) throw new Error(res.error)
+}
+
+export async function deleteMarketplaceListing(id: string | number): Promise<void> {
+  const res = await api.delete(`/v1/admin/marketplace/listings/${id}`)
+  if (res.error) throw new Error(res.error)
+}
+
+export async function getAdminMarketplaceReports(params: Record<string, any> = {}): Promise<PaginatedResponse<any>> {
+  const query = new URLSearchParams()
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null) query.append(key, value.toString())
+  })
+  const res = await api.get<any>(`/v1/admin/marketplace/reports?${query.toString()}`)
+  if (res.error) throw new Error(res.error)
+  const data = res.data
+  return {
+    data: data?.content || [],
+    total: data?.totalElements || 0,
+    page: data?.page || 0,
+    pageSize: data?.size || 20
+  }
+}
+
+export async function updateMarketplaceReportStatus(id: string | number, status: string): Promise<void> {
+  const res = await api.patch(`/v1/admin/marketplace/reports/${id}/status`, { status })
+  if (res.error) throw new Error(res.error)
+}
+
+// ── Teammate ──────────────────────────────────────────────────────────────
+
+export async function getPendingTeammatePosts(): Promise<any[]> {
+  const res = await api.get<any[]>('/v1/admin/teammate/posts/pending')
+  if (res.error) throw new Error(res.error)
+  return res.data as any[]
+}
+
+export async function updateTeammatePostStatus(postId: string | number, status: string, reasonForChange?: string): Promise<void> {
+  const res = await api.put(`/v1/admin/teammate/posts/${postId}/status`, { status, reasonForChange })
+  if (res.error) throw new Error(res.error)
 }
 
 // ── Common / Reference Data ───────────────────────────────────────────────

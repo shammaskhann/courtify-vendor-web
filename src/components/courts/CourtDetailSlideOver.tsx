@@ -6,6 +6,9 @@ import type { Court, Venue } from '@/types/models'
 import { getVenueById } from '@/lib/api/venueApi'
 import { useEffect, useState } from 'react'
 import { Skeleton } from '../ui/Skeleton'
+import { CourtCalendarHeatmap } from './CourtCalendarHeatmap'
+
+import { getCourtBasePrice } from '@/lib/pricing'
 
 interface CourtDetailSlideOverProps {
   court: Court | null
@@ -69,7 +72,7 @@ export function CourtDetailSlideOver({ court, isOpen, onClose, onEdit, onDelete 
           <div className="flex items-center gap-3 text-body-sm">
             <Info size={16} className="text-secondary shrink-0" />
             <span className="text-secondary w-20">Hourly Rate:</span>
-            <span className="font-medium text-primary">PKR {court.constantPriceOffPeak?.toLocaleString() || 0}</span>
+            <span className="font-medium text-primary">PKR {getCourtBasePrice(court).toLocaleString()}</span>
           </div>
         </div>
 
@@ -98,6 +101,8 @@ export function CourtDetailSlideOver({ court, isOpen, onClose, onEdit, onDelete 
             <p className="text-body-sm text-secondary">Venue information not available.</p>
           )}
         </div>
+
+        <CourtCalendarHeatmap courtId={court.id} openTime={venue?.openingTime} closeTime={venue?.closingTime} />
       </div>
     </SlideOver>
   )

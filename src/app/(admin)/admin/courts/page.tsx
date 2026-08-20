@@ -8,24 +8,37 @@ import { Button } from '@/components/ui/Button'
 import { ConfirmationModal } from '@/components/ui/ConfirmationModal'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { RefreshCw, CheckCircle, XCircle, RotateCcw, Star } from 'lucide-react'
-import { getPendingCourts, approveCourt, disableCourt, enableCourt } from '@/lib/api/adminApi'
+import { getPendingCourts, searchCourts, approveCourt, disableCourt, enableCourt } from '@/lib/api/adminApi'
 import toast from 'react-hot-toast'
 import Link from 'next/link'
 import type { Court } from '@/types/models'
 
+type TabType = 'PENDING' | 'ALL'
+
 export default function AdminCourtsPage() {
+  const [activeTab, setActiveTab] = useState<TabType>('PENDING')
   const [courts, setCourts] = useState<Court[]>([])
   const [loading, setLoading] = useState(true)
-  const [search, setSearch] = useState('')
+  const [page, setPage] = useState(0)
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalElements, setTotalElements] = useState(0)
+  const [filters, setFilters] = useState<Record<string, any>>({})
   const [confirm, setConfirm] = useState<{ open: boolean; court?: Court; action?: 'APPROVE' | 'DISABLE' | 'ENABLE' }>({ open: false })
 
   const fetchCourts = async () => {
     setLoading(true)
     try {
-      const resp = await getPendingCourts(0, 100)
+      let resp
+      if (activeTab === 'PENDING') {
+        resp = await getPendingCourts(page, 20)
+      } else {
+        resp = await searchCourts({ page, size: 20, ...filters })
+      }
       setCourts(resp.data || [])
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to load courts')
+      setTotalPages(Math.max(1, Math.ceil(resp.total / 20)))
+      setTotalElements(resp.total)
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to load courts')
       setCourts([])
     } finally {
       setLoading(false)
@@ -34,7 +47,7 @@ export default function AdminCourtsPage() {
 
   useEffect(() => {
     fetchCourts()
-  }, [])
+  }, [activeTab, page, filters])
 
   const openConfirm = (court: Court, action: 'APPROVE' | 'DISABLE' | 'ENABLE') => {
     setConfirm({ open: true, court, action })
@@ -50,15 +63,10 @@ export default function AdminCourtsPage() {
       toast.success(`Court successfully ${confirm.action.toLowerCase()}d!`)
       setConfirm({ open: false })
       fetchCourts()
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Action failed')
+    } catch (err: any) {
+      toast.error(err.message || 'Action failed')
     }
   }
-
-  const filtered = courts.filter(c => {
-    const q = search.toLowerCase()
-    return (c.name || '').toLowerCase().includes(q) || (c.sportType || '').toString().toLowerCase().includes(q)
-  })
 
   const getStatus = (court: Court) => {
     if (court.isDisabled) return 'DISABLED'
@@ -79,26 +87,33 @@ export default function AdminCourtsPage() {
   const confirmProps = getConfirmProps()
 
   const columns = [
-    { header: '#', accessor: (_: Court, i: number) => i + 1 },
     {
-      header: 'Court',
+      header: 'Court & Sport',
       accessor: (row: Court) => (
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-brand/10 flex items-center justify-center font-bold text-brand">
             {(row.name || '?')[0].toUpperCase()}
           </div>
-          <div>
-            <p className="font-medium text-body">{row.name}</p>
-            <span className="text-sm text-secondary">{row.sportType}</span>
+          <div className="flex flex-col">
+            <p className="font-medium text-primary max-w-[200px] truncate" title={row.name}>{row.name}</p>
+            <span className="text-xs text-secondary">{row.sportType || 'Unknown Sport'}</span>
           </div>
         </div>
       )
     },
-    { header: 'Pricing', accessor: (row: Court) => row.pricingType || '—' },
+    {
+      header: 'Pricing',
+      accessor: (row: Court) => (
+        <div className="flex flex-col">
+          <span className="text-sm font-medium text-primary">{row.pricingType || '—'}</span>
+          <span className="text-xs text-secondary">Base: PKR {row.constantPriceOffPeak || 0}</span>
+        </div>
+      )
+    },
     {
       header: 'Rating',
       accessor: (row: Court) => {
-        if (!row.reviewCount) return <span className="text-secondary text-sm">No reviews</span>
+        if (!row.reviewCount) return <span className="text-secondary text-xs">No reviews</span>
         return (
           <Link 
             href={`/admin/reviews?courtId=${row.id}`}
@@ -106,7 +121,7 @@ export default function AdminCourtsPage() {
           >
             <Star size={14} className="fill-brand text-brand" />
             <span className="font-medium">{row.avgRating?.toFixed(1) || '0.0'}</span>
-            <span className="text-secondary">({row.reviewCount})</span>
+            <span className="text-secondary text-xs">({row.reviewCount})</span>
           </Link>
         )
       }
@@ -122,23 +137,24 @@ export default function AdminCourtsPage() {
     },
     {
       header: 'Actions',
+      align: 'right' as const,
       accessor: (row: Court) => {
         const status = getStatus(row)
         return (
-          <div className="flex items-center justify-end gap-2">
+          <div className="flex items-center justify-end gap-1">
             {status === 'PENDING' && (
-              <Button size="sm" variant="primary" onClick={() => openConfirm(row, 'APPROVE')}>
-                <CheckCircle size={14} className="mr-1" /> Approve
+              <Button size="sm" variant="ghost" className="text-success hover:bg-success/10 h-8" onClick={() => openConfirm(row, 'APPROVE')}>
+                <CheckCircle size={16} className="mr-1" /> Approve
               </Button>
             )}
             {status === 'APPROVED' && (
-              <Button size="sm" variant="destructive" onClick={() => openConfirm(row, 'DISABLE')}>
-                <XCircle size={14} className="mr-1" /> Disable
+              <Button size="sm" variant="ghost" className="text-error hover:bg-error/10 h-8" onClick={() => openConfirm(row, 'DISABLE')}>
+                <XCircle size={16} className="mr-1" /> Disable
               </Button>
             )}
             {status === 'DISABLED' && (
-              <Button size="sm" variant="secondary" onClick={() => openConfirm(row, 'ENABLE')}>
-                <RotateCcw size={14} className="mr-1" /> Enable
+              <Button size="sm" variant="ghost" className="text-secondary hover:bg-surface-variant h-8" onClick={() => openConfirm(row, 'ENABLE')}>
+                <RotateCcw size={16} className="mr-1" /> Enable
               </Button>
             )}
           </div>
@@ -150,8 +166,8 @@ export default function AdminCourtsPage() {
   return (
     <div className="flex flex-col gap-6 pb-8">
       <PageHeader
-        title="Pending Courts"
-        subtitle={`${courts.length} court${courts.length !== 1 ? 's' : ''} loaded`}
+        title="Courts Management"
+        subtitle="Manage, approve, or disable courts."
         actions={
           <Button variant="secondary" size="icon" onClick={fetchCourts} title="Refresh">
             <RefreshCw size={16} />
@@ -159,20 +175,73 @@ export default function AdminCourtsPage() {
         }
       />
 
-      <FilterBar
-        configs={[{ key: 'search', label: 'Search', type: 'search', placeholder: 'Search by court name or sport...' }]}
-        onFilterChange={(f) => setSearch(f.search || '')}
-      />
+      <div className="flex border-b border-border gap-6">
+        <button
+          className={`pb-3 font-medium transition-colors text-sm ${
+            activeTab === 'PENDING' ? 'border-b-2 border-brand text-brand' : 'text-secondary hover:text-primary'
+          }`}
+          onClick={() => { setActiveTab('PENDING'); setPage(0); setFilters({}); }}
+        >
+          Pending Approval
+        </button>
+        <button
+          className={`pb-3 font-medium transition-colors text-sm ${
+            activeTab === 'ALL' ? 'border-b-2 border-brand text-brand' : 'text-secondary hover:text-primary'
+          }`}
+          onClick={() => { setActiveTab('ALL'); setPage(0); setFilters({}); }}
+        >
+          All Courts
+        </button>
+      </div>
+
+      {activeTab === 'ALL' && (
+        <FilterBar
+          configs={[
+            { key: 'keyword', label: 'Search', type: 'search', placeholder: 'Court name...' },
+            { key: 'city', label: 'City', type: 'search', placeholder: 'e.g. Lahore' },
+            { key: 'sportType', label: 'Sport', type: 'search', placeholder: 'e.g. Futsal' }
+          ]}
+          onFilterChange={(f) => {
+            setFilters(f)
+            setPage(0)
+          }}
+        />
+      )}
 
       <div className="bg-surface rounded-xl border border-border overflow-hidden">
         <DataTable
           columns={columns as any}
-          data={filtered}
+          data={courts}
           isLoading={loading}
           keyExtractor={(row) => row.id.toString()}
-          emptyStateTitle={search ? 'No courts match your search.' : 'No pending courts found.'}
-          emptyStateDescription=""
+          emptyStateTitle={activeTab === 'PENDING' ? 'No pending courts' : 'No courts found.'}
         />
+        
+        {totalPages > 1 && (
+          <div className="p-4 border-t border-border flex items-center justify-between">
+            <span className="text-sm text-secondary">
+              Showing page {page + 1} of {totalPages} ({totalElements} total)
+            </span>
+            <div className="flex items-center gap-2">
+              <Button 
+                variant="secondary" 
+                size="sm" 
+                disabled={page === 0}
+                onClick={() => setPage(p => Math.max(0, p - 1))}
+              >
+                Previous
+              </Button>
+              <Button 
+                variant="secondary" 
+                size="sm" 
+                disabled={page >= totalPages - 1}
+                onClick={() => setPage(p => p + 1)}
+              >
+                Next
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
 
       <ConfirmationModal

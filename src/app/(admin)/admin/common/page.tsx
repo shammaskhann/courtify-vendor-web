@@ -7,6 +7,7 @@ import { ConfirmationModal } from '@/components/ui/ConfirmationModal'
 import { MapPin, Star, Dumbbell, Plus, X, RefreshCw } from 'lucide-react'
 import { getAmenities, addAmenity, deleteAmenity, getCities, addCity, deleteCity, getSportTypes, addSportType, deleteSportType } from '@/lib/api/adminApi'
 import type { CommonItem } from '@/types/models'
+import toast from 'react-hot-toast'
 
 type TabKey = 'amenities' | 'cities' | 'sports'
 
@@ -63,8 +64,9 @@ export default function AdminCommonManagementPage() {
       // API might return standard array or PaginatedResponse
       const list = Array.isArray(resp) ? resp : (resp as any).content || (resp as any).data || []
       setData(prev => ({ ...prev, [key]: list }))
-    } catch (err) {
+    } catch (err: any) {
       console.error(String(err))
+      toast.error(err.message || `Failed to load ${t.label}`)
     } finally {
       setLoading(prev => ({ ...prev, [key]: false }))
     }
@@ -84,16 +86,19 @@ export default function AdminCommonManagementPage() {
 
     const exists = currentList.some(item => (item.name || '').toLowerCase() === trimmed.toLowerCase())
     if (exists) {
+      toast.error(`${tabDef.singular} "${trimmed}" already exists`)
       return
     }
 
     setAdding(true)
     try {
       await tabDef.add({ name: trimmed })
+      toast.success(`${tabDef.singular} added successfully`)
       setInput('')
       loadTab(activeTab)
     } catch (err: any) {
       console.error(String(err))
+      toast.error(err.message || `Failed to add ${tabDef.singular.toLowerCase()}`)
     } finally {
       setAdding(false)
     }
@@ -111,9 +116,11 @@ export default function AdminCommonManagementPage() {
     
     try {
       await tabDef.delete(item.id)
-    } catch (err) {
+      toast.success(`${tabDef.singular} deleted successfully`)
+    } catch (err: any) {
       // Restore list on failure
       loadTab(activeTab)
+      toast.error(err.message || `Failed to delete ${tabDef.singular.toLowerCase()}`)
     } finally {
       setConfirm({ open: false })
     }
@@ -166,7 +173,7 @@ export default function AdminCommonManagementPage() {
               placeholder={tabDef.placeholder}
               value={input}
               onChange={e => setInput(e.target.value)}
-              className="field-input w-full"
+              className="w-full bg-surface-variant border border-border/60 focus:border-brand focus:ring-1 focus:ring-brand rounded-lg px-4 py-3 text-body outline-none transition-all placeholder:text-secondary/50"
             />
             <Button type="submit" disabled={adding || !input.trim()} className="w-full justify-center">
               <Plus size={16} className="mr-2" />
