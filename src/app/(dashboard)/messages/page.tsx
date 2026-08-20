@@ -5,7 +5,7 @@ import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from '@tansta
 import { getThreads, getMessages, sendMessage, markThreadAsRead } from '@/lib/api/chatApi'
 import { useStompClient } from '@/hooks/useStompClient'
 import { useAuth } from '@/contexts/AuthContext'
-import { Send, User as UserIcon, Inbox, Search, Edit, MoreHorizontal, Info, CheckCheck, Check, Paperclip, Loader2 } from 'lucide-react'
+import { Send, User as UserIcon, Inbox, Search, Edit, MoreHorizontal, Info, CheckCheck, Check, Paperclip, Loader2, X } from 'lucide-react'
 import { useInView } from 'react-intersection-observer'
 import { uploadImage } from '@/lib/api/uploadApi'
 import { toast } from 'react-hot-toast'
@@ -26,6 +26,8 @@ export default function MessagesPage() {
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [isUploading, setIsUploading] = useState(false)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
 
   const { data: threads = [], isLoading: isLoadingThreads } = useQuery({
     queryKey: ['chat-threads'],
@@ -139,26 +141,36 @@ export default function MessagesPage() {
     }
   })
 
-  const handleSend = (e: React.FormEvent) => {
+  const handleSend = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!input.trim() || !activeThreadId) return
-    sendMutation.mutate({ content: input.trim(), type: 'TEXT' })
+    if (!input.trim() && !selectedFile) return
+    if (!activeThreadId) return
+
+    if (selectedFile) {
+      setIsUploading(true)
+      try {
+        const url = await uploadImage(selectedFile)
+        sendMutation.mutate({ content: input.trim() || 'Sent an image', type: 'IMAGE', url })
+      } catch (err: any) {
+        toast.error('Failed to upload image')
+        setIsUploading(false)
+        return
+      }
+      setIsUploading(false)
+      setSelectedFile(null)
+      setPreviewUrl(null)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    } else if (input.trim()) {
+      sendMutation.mutate({ content: input.trim(), type: 'TEXT' })
+    }
   }
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file || !activeThreadId) return
 
-    setIsUploading(true)
-    try {
-      const url = await uploadImage(file)
-      sendMutation.mutate({ content: 'Sent an image', type: 'IMAGE', url })
-    } catch (err: any) {
-      toast.error('Failed to upload image')
-    } finally {
-      setIsUploading(false)
-      if (fileInputRef.current) fileInputRef.current.value = ''
-    }
+    setSelectedFile(file)
+    setPreviewUrl(URL.createObjectURL(file))
   }
 
   const getInitials = (name: string) => {
@@ -166,7 +178,7 @@ export default function MessagesPage() {
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh)] -mt-2 -mx-2 bg-[#121214] text-[#E4E4E5] rounded-xl overflow-hidden border border-[#2A2A2D] shadow-sm font-sans">
+    <div className="flex flex-col h-[calc(100vh-112px)] -mt-2 -mx-2 bg-[#121214] text-[#E4E4E5] rounded-xl overflow-hidden border border-[#2A2A2D] shadow-sm font-sans">
       <div className="flex flex-1 overflow-hidden">
 
         {/* Sidebar / Threads List */}
@@ -383,43 +395,58 @@ export default function MessagesPage() {
               {/* Chat Input */}
               <div className="p-4 px-6 pb-6 shrink-0 bg-gradient-to-t from-[#121214] to-transparent">
                 <div className="max-w-5xl mx-auto flex flex-col items-center">
-                  <form onSubmit={handleSend} className="w-full flex items-end gap-3 bg-[#1C1C1F] border border-[#2A2A2D] focus-within:border-[#4B4B52] focus-within:ring-1 focus-within:ring-[#4B4B52] rounded-2xl p-2.5 transition-all shadow-lg">
-                    <input 
-                      type="file" 
-                      ref={fileInputRef} 
-                      onChange={handleFileChange} 
-                      accept="image/*" 
-                      className="hidden" 
-                    />
-                    <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      disabled={isUploading}
-                      className="rounded-xl shrink-0 w-11 h-11 flex items-center justify-center text-[#8B8B8F] hover:bg-[#2A2A2D] hover:text-[#E4E4E5] transition-colors mb-0.5"
-                    >
-                      {isUploading ? <Loader2 size={18} className="animate-spin" /> : <Paperclip size={18} />}
-                    </button>
-                    <textarea
-                      value={input}
-                      onChange={(e) => setInput(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                          e.preventDefault()
-                          handleSend(e)
-                        }
-                      }}
-                      placeholder="Type your message..."
-                      className="flex-1 bg-transparent border-none px-3 py-3 text-[15px] text-[#E4E4E5] placeholder:text-[#8B8B8F] focus:outline-none focus:ring-0 resize-none min-h-[48px] max-h-32"
-                      disabled={sendMutation.isPending}
-                      rows={1}
-                    />
-                    <button
-                      type="submit"
-                      className="rounded-xl shrink-0 w-11 h-11 flex items-center justify-center bg-[#D4F84F] hover:bg-[#c3e647] text-[#121214] transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed mb-0.5"
-                      disabled={!input.trim() || sendMutation.isPending}
-                    >
-                      <Send size={18} strokeWidth={2.5} className="ml-1" />
-                    </button>
+                  <form onSubmit={handleSend} className="w-full flex flex-col gap-3 bg-[#1C1C1F] border border-[#2A2A2D] focus-within:border-[#4B4B52] focus-within:ring-1 focus-within:ring-[#4B4B52] rounded-2xl p-2.5 transition-all shadow-lg">
+                    {previewUrl && (
+                      <div className="relative inline-block ml-2 mt-2 self-start">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={previewUrl} alt="Preview" className="h-20 rounded-md object-cover border border-[#2A2A2D]" />
+                        <button 
+                          type="button" 
+                          onClick={() => { setSelectedFile(null); setPreviewUrl(null); if (fileInputRef.current) fileInputRef.current.value = ''; }}
+                          className="absolute -top-2 -right-2 bg-[#2A2A2D] text-[#8B8B8F] hover:text-white rounded-full p-0.5 shadow flex items-center justify-center"
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                    )}
+                    <div className="w-full flex items-end gap-3">
+                      <input 
+                        type="file" 
+                        ref={fileInputRef} 
+                        onChange={handleFileChange} 
+                        accept="image/*" 
+                        className="hidden" 
+                      />
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={isUploading}
+                        className="rounded-xl shrink-0 w-11 h-11 flex items-center justify-center text-[#8B8B8F] hover:bg-[#2A2A2D] hover:text-[#E4E4E5] transition-colors mb-0.5"
+                      >
+                        {isUploading ? <Loader2 size={18} className="animate-spin" /> : <Paperclip size={18} />}
+                      </button>
+                      <textarea
+                        value={input}
+                        onChange={(e) => setInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault()
+                            handleSend(e)
+                          }
+                        }}
+                        placeholder="Type your message..."
+                        className="flex-1 bg-transparent border-none px-3 py-3 text-[15px] text-[#E4E4E5] placeholder:text-[#8B8B8F] focus:outline-none focus:ring-0 resize-none min-h-[48px] max-h-32"
+                        disabled={sendMutation.isPending || isUploading}
+                        rows={1}
+                      />
+                      <button
+                        type="submit"
+                        className="rounded-xl shrink-0 w-11 h-11 flex items-center justify-center bg-[#D4F84F] hover:bg-[#c3e647] text-[#121214] transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed mb-0.5"
+                        disabled={(!input.trim() && !selectedFile) || sendMutation.isPending || isUploading}
+                      >
+                        <Send size={18} strokeWidth={2.5} className="ml-1" />
+                      </button>
+                    </div>
                   </form>
                   <p className="text-[#8B8B8F] text-[11px] font-medium mt-3">
                     Press Shift + Enter for new line

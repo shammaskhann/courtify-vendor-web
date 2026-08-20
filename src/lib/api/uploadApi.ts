@@ -4,13 +4,14 @@ export async function uploadImage(file: File): Promise<string> {
   const formData = new FormData()
   formData.append('file', file)
 
-  const res = await api.post<string>('/s3/upload', formData)
+  const res = await api.post<any>('/s3/venue/upload', formData)
   
   if (res.error) {
     throw new Error(res.error)
   }
   
-  return res.data as string
+  const data = res.data
+  return typeof data === 'string' ? data : data?.url || ''
 }
 
 export async function uploadVenueImage(file: File): Promise<string> {

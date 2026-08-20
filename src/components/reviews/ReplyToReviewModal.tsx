@@ -12,6 +12,7 @@ interface ReplyToReviewModalProps {
   isOpen: boolean
   onClose: () => void
   review: Review | null
+  onSuccess?: () => void
 }
 
 const replySchema = z.object({
@@ -20,7 +21,7 @@ const replySchema = z.object({
 
 type ReplyFormValues = z.infer<typeof replySchema>
 
-export function ReplyToReviewModal({ isOpen, onClose, review }: ReplyToReviewModalProps) {
+export function ReplyToReviewModal({ isOpen, onClose, review, onSuccess }: ReplyToReviewModalProps) {
   const queryClient = useQueryClient()
 
   const {
@@ -47,6 +48,7 @@ export function ReplyToReviewModal({ isOpen, onClose, review }: ReplyToReviewMod
       // Invalidate both the full list and the court detail
       queryClient.invalidateQueries({ queryKey: ['court-reviews'] })
       queryClient.invalidateQueries({ queryKey: ['court', String(review!.courtId)] })
+      onSuccess?.()
       onClose()
     },
     onError: (err: Error) => {

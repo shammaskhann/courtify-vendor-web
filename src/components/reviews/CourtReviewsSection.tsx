@@ -10,9 +10,10 @@ interface CourtReviewsSectionProps {
   avgRating?: number
   reviewCount?: number
   latestReviews?: Review[]
+  onReplySuccess?: () => void
 }
 
-export function CourtReviewsSection({ courtId, avgRating = 0, reviewCount = 0, latestReviews = [] }: CourtReviewsSectionProps) {
+export function CourtReviewsSection({ courtId, avgRating = 0, reviewCount = 0, latestReviews = [], onReplySuccess }: CourtReviewsSectionProps) {
   const router = useRouter()
   const [selectedReview, setSelectedReview] = useState<Review | null>(null)
 
@@ -28,13 +29,13 @@ export function CourtReviewsSection({ courtId, avgRating = 0, reviewCount = 0, l
 
   return (
     <>
-      <div className="bg-surface border border-border rounded-xl shadow-sm overflow-hidden flex flex-col">
+      <div className="bg-surface border border-border rounded-xl shadow-sm overflow-hidden flex flex-col shrink-0">
         <div className="p-6 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h3 className="text-h4 font-semibold text-primary mb-1">Player Reviews</h3>
             <div className="flex items-center gap-2">
               <span className="text-brand text-lg">★</span>
-              <span className="font-semibold text-primary">{avgRating.toFixed(1)} average</span>
+              <span className="font-semibold text-primary">{(avgRating || 0).toFixed(1)} average</span>
               <span className="text-secondary text-sm">• {reviewCount} {reviewCount === 1 ? 'review' : 'reviews'}</span>
             </div>
           </div>
@@ -99,6 +100,7 @@ export function CourtReviewsSection({ courtId, avgRating = 0, reviewCount = 0, l
         isOpen={!!selectedReview} 
         onClose={() => setSelectedReview(null)} 
         review={selectedReview} 
+        onSuccess={onReplySuccess}
       />
     </>
   )

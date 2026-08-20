@@ -144,7 +144,7 @@ export default function CourtDetailPage({ params }: { params: Promise<{ id: stri
   }
 
   return (
-    <div className="flex flex-col gap-6 pb-8 h-full">
+    <div className="flex flex-col gap-6 pb-8">
       <PageHeader
         title={court.name || court.courtName || 'Court Details'}
         subtitle="Manage court details, pricing, and availability."
@@ -298,6 +298,7 @@ export default function CourtDetailPage({ params }: { params: Promise<{ id: stri
         avgRating={court.avgRating}
         reviewCount={court.reviewCount}
         latestReviews={court.latestReviews}
+        onReplySuccess={fetchCourtData}
       />
 
       <SlideOver
