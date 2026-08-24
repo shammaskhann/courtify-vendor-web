@@ -42,3 +42,15 @@ export async function changePassword(data: ChangePasswordInput): Promise<void> {
   const res = await api.post('/auth/password/update', data)
   if (res.error) throw new Error(res.error)
 }
+
+export interface NotificationPreferencesInput {
+  pushEnabled: boolean
+  chatAlerts: boolean
+  bookingAlerts: boolean
+  marketingAlerts: boolean
+}
+
+export async function updateNotificationPreferences(data: NotificationPreferencesInput): Promise<void> {
+  const res = await api.put('/court-owner/notification-preferences', data)
+  if (res.error) throw new Error(res.error)
+}

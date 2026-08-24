@@ -33,6 +33,7 @@ export type PricingType = (typeof PRICING_TYPES)[number]
 
 export const NOTIFICATION_TYPES = [
   'BOOKING_NEW', 'BOOKING_STATUS_CHANGE', 'DEAL_EXPIRING', 'VENUE_REVIEW', 'SYSTEM', 'PAYMENT_RECEIVED',
+  'CHAT', 'BOOKING', 'INFO', 'BROADCAST'
 ] as const
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number]
 
@@ -168,6 +169,25 @@ export interface Notification {
   relatedId: string | null
   relatedType: string | null
   createdAt: string
+  time?: string
+}
+
+export const CAMPAIGN_STATUSES = ['DRAFT', 'IN_PROGRESS', 'COMPLETED', 'FAILED'] as const
+export type CampaignStatus = (typeof CAMPAIGN_STATUSES)[number]
+
+export interface Campaign {
+  id: string | number
+  title: string
+  messageBody: string
+  targetAudience: 'ALL' | 'BY_CITY' | 'BY_RADIUS'
+  targetData?: any
+  additionalData?: Record<string, string>
+  status: CampaignStatus
+  totalRecipients?: number
+  sentCount?: number
+  failedCount?: number
+  createdAt: string
+  updatedAt?: string
 }
 
 // ---- Analytics ----
