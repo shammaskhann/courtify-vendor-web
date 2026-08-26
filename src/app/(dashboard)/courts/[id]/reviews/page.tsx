@@ -29,7 +29,7 @@ export default function CourtReviewsPage({ params }: { params: Promise<{ id: str
     isLoading 
   } = useInfiniteQuery({
     queryKey: ['court-reviews', courtId, sort],
-    queryFn: ({ pageParam = 0 }) => getCourtReviews(courtId, { page: pageParam, size: 10, sort }),
+    queryFn: ({ pageParam = 0 }) => getCourtReviews(courtId, { page: pageParam, size: 50, sort }),
     getNextPageParam: (lastPage) => {
       if (lastPage.data.length === lastPage.pageSize) {
         return lastPage.page + 1

@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { MapPin, DollarSign, Activity, Edit, Trash2 } from 'lucide-react'
+import { MapPin, DollarSign, Activity, Edit, Trash2, Wrench } from 'lucide-react'
 import { StatusBadge } from '../ui/StatusBadge'
 import { Button } from '../ui/Button'
 import { ROUTES } from '@/lib/constants'
@@ -11,9 +11,10 @@ interface CourtCardProps {
   venueName?: string
   onEdit?: (id: string) => void
   onDelete?: (id: string) => void
+  onToggleMaintenance?: (id: string, isMaintenance: boolean) => void
 }
 
-export function CourtCard({ court, venueName, onEdit, onDelete }: CourtCardProps) {
+export function CourtCard({ court, venueName, onEdit, onDelete, onToggleMaintenance }: CourtCardProps) {
   const imageUrl = court.images?.[0] || 'https://images.unsplash.com/photo-1599586120429-48281b6f0ece?auto=format&fit=crop&q=80&w=600'
   const sportTypes = Array.isArray(court.sportType) ? court.sportType : [court.sportType]
 
@@ -28,7 +29,13 @@ export function CourtCard({ court, venueName, onEdit, onDelete }: CourtCardProps
           loading="lazy"
         />
         <div className="absolute top-4 right-4 flex gap-2">
-          <StatusBadge status={!court.isDisabled ? 'ACTIVE' : 'INACTIVE'} />
+          {court.isDisabled ? (
+            <span className="inline-flex items-center px-2 py-1 rounded text-xs font-semibold bg-error/10 text-error">
+              MAINTENANCE
+            </span>
+          ) : (
+            <StatusBadge status="ACTIVE" />
+          )}
         </div>
       </div>
 
@@ -76,13 +83,24 @@ export function CourtCard({ court, venueName, onEdit, onDelete }: CourtCardProps
           </div>
           
           <div className="flex gap-2 shrink-0">
+            {onToggleMaintenance && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className={`h-8 w-8 ${court.isDisabled ? 'text-brand bg-brand/10 hover:bg-brand/20' : 'text-secondary hover:text-primary'}`}
+                onClick={() => onToggleMaintenance(court.id, !court.isDisabled)}
+                title={court.isDisabled ? "Enable Court" : "Set to Maintenance"}
+              >
+                <Wrench size={16} />
+              </Button>
+            )}
             {onEdit && (
               <Button
                 variant="ghost"
                 size="icon"
                 className="h-8 w-8 text-secondary hover:text-primary"
                 onClick={() => onEdit(court.id)}
-                aria-label="Edit court"
+                title="Edit court"
               >
                 <Edit size={16} />
               </Button>

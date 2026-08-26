@@ -9,14 +9,15 @@ import { StatusBadge } from '@/components/ui/StatusBadge'
 import { SlideOver } from '@/components/ui/SlideOver'
 import { ConfirmationModal } from '@/components/ui/ConfirmationModal'
 import { CourtCard } from '@/components/courts/CourtCard'
-import { LayoutGrid, List, Plus } from 'lucide-react'
+import { LayoutGrid, List, Plus, Wrench, Edit, Trash2 } from 'lucide-react'
 import { CourtDetailSlideOver } from '@/components/courts/CourtDetailSlideOver'
 import { CourtForm } from '@/components/courts/CourtForm'
-import { getCourts, createCourt, updateCourt, deleteCourt } from '@/lib/api/courtApi'
+import { getCourts, createCourt, updateCourt, deleteCourt, toggleCourtMaintenance } from '@/lib/api/courtApi'
 import { getVenues } from '@/lib/api/venueApi'
 import { SPORT_TYPE_OPTIONS } from '@/lib/mock/data/metadata'
 import type { Court, Venue } from '@/types/models'
 import { useSearchParams, useRouter } from 'next/navigation'
+import toast from 'react-hot-toast'
 
 export default function CourtsPage() {
   const router = useRouter()
@@ -118,6 +119,19 @@ export default function CourtsPage() {
     }
   }
 
+  const handleToggleMaintenance = async (id: string, isMaintenance: boolean) => {
+    try {
+      await toggleCourtMaintenance(id, isMaintenance)
+      toast.success(isMaintenance ? 'Court is now under maintenance' : 'Court is now active')
+      await fetchData()
+      if (detailCourt?.id === id) {
+        setDetailCourt({ ...detailCourt, isDisabled: isMaintenance })
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to update court status')
+    }
+  }
+
   const handleFormSubmit = async (data: any) => {
     try {
       if (editingCourt) {
@@ -197,8 +211,49 @@ export default function CourtsPage() {
     {
       header: 'Status',
       render: (court: Court) => (
-        <StatusBadge status={!court.isDisabled ? 'ACTIVE' : 'INACTIVE'} />
+        court.isDisabled ? (
+          <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-error/10 text-error tracking-wide">
+            MAINTENANCE
+          </span>
+        ) : (
+          <StatusBadge status="ACTIVE" />
+        )
       ),
+    },
+    {
+      header: '',
+      align: 'right' as const,
+      render: (court: Court) => (
+        <div className="flex gap-2 justify-end" onClick={e => e.stopPropagation()}>
+          <Button
+            variant="ghost"
+            size="icon"
+            className={`h-8 w-8 ${court.isDisabled ? 'text-brand bg-brand/10 hover:bg-brand/20' : 'text-secondary hover:text-primary'}`}
+            onClick={() => handleToggleMaintenance(court.id, !court.isDisabled)}
+            title={court.isDisabled ? "Enable Court" : "Set to Maintenance"}
+          >
+            <Wrench size={16} />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-secondary hover:text-primary"
+            onClick={() => handleEdit(court.id)}
+            title="Edit court"
+          >
+            <Edit size={16} />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-error hover:text-error hover:bg-error-bg"
+            onClick={() => handleDelete(court.id)}
+            title="Delete court"
+          >
+            <Trash2 size={16} />
+          </Button>
+        </div>
+      )
     },
   ]
 
@@ -263,12 +318,13 @@ export default function CourtsPage() {
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {courts.map((court) => (
-                <CourtCard 
-                  key={court.id} 
-                  court={court} 
+                <CourtCard
+                  key={court.id}
+                  court={court}
                   venueName={venues.find(v => v.id === court.venueId)?.name}
                   onEdit={handleEdit}
                   onDelete={handleDelete}
+                  onToggleMaintenance={handleToggleMaintenance}
                 />
               ))}
             </div>

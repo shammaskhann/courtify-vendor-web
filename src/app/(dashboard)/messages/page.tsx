@@ -414,7 +414,7 @@ export default function MessagesPage() {
                         type="file" 
                         ref={fileInputRef} 
                         onChange={handleFileChange} 
-                        accept="image/*" 
+                        accept="image/jpeg,image/png,image/webp" 
                         className="hidden" 
                       />
                       <button

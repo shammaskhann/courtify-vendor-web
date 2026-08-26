@@ -447,7 +447,7 @@ export function VenueForm({ initialData, onSubmit, onCancel, editSection }: Venu
             
             <input 
               type="file" 
-              accept="image/*" 
+              accept="image/jpeg,image/png,image/webp" 
               className="hidden" 
               ref={fileInputRef}
               onChange={handleFileSelect}

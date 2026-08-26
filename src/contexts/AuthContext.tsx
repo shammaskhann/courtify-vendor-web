@@ -218,8 +218,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(async () => {
     setIsLoading(true)
     try {
-      // await api.post('/auth/logout', {})
-      await new Promise(resolve => setTimeout(resolve, 500))
+      await api.post('/auth/logout', {})
     } catch {
       // ignore
     } finally {

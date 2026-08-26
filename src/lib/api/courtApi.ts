@@ -76,6 +76,12 @@ export async function deleteCourt(venueId: string, courtId: string): Promise<{ s
   return { success: true }
 }
 
+export async function toggleCourtMaintenance(courtId: string, isMaintenance: boolean): Promise<boolean> {
+  const res = await api.patch<{ success: boolean; data: boolean }>(`/court-owner/courts/${courtId}/toggle-maintenance?isMaintenance=${isMaintenance}`, {})
+  if (res.error) throw new Error(res.error)
+  return res.data?.data || false
+}
+
 export async function getCourtOccupiedSlotsRange(courtId: string, startDate: string, endDate: string): Promise<Record<string, { startTime: string, endTime: string }[]>> {
   const res = await api.get<Record<string, { startTime: string, endTime: string }[]>>(`/vendor-booking/court/${courtId}/occupied-slots?startDate=${startDate}&endDate=${endDate}`)
   if (res.error) throw new Error(res.error)
