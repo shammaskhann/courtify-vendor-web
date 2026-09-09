@@ -52,11 +52,6 @@ export const primaryNavigation: NavItem[] = [
     icon: CalendarDays,
   },
   {
-    label: 'Customers',
-    href: '/customers',
-    icon: Users,
-  },
-  {
     label: 'Messages',
     href: '/messages',
     icon: MessageSquare,

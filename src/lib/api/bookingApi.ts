@@ -16,7 +16,7 @@ export async function getBookings(params: {
     endpoint = `/vendor-booking/venue/${params.venueId}`
   } else {
     const statusPath = params.status && params.status !== 'ALL' ? params.status : 'ALL'
-    endpoint = `/vendor-booking/${statusPath}`
+    endpoint = `/vendor-booking/status/${statusPath}`
   }
     
   const res = await api.get<PaginatedResponse<Booking> | Booking[]>(`${endpoint}?${query.toString()}`)
@@ -34,7 +34,7 @@ export async function getBookings(params: {
 }
 
 export async function getBookingsByStatus(status: BookingStatus | 'ALL'): Promise<{ bookings: Booking[]; total: number }> {
-  const endpoint = `/vendor-booking/${status}`
+  const endpoint = `/vendor-booking/status/${status}`
   const res = await api.get<Booking[] | PaginatedResponse<Booking>>(endpoint)
   
   if (res.error) throw new Error(res.error)

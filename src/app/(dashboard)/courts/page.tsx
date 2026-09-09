@@ -14,12 +14,13 @@ import { CourtDetailSlideOver } from '@/components/courts/CourtDetailSlideOver'
 import { CourtForm } from '@/components/courts/CourtForm'
 import { getCourts, createCourt, updateCourt, deleteCourt, toggleCourtMaintenance } from '@/lib/api/courtApi'
 import { getVenues } from '@/lib/api/venueApi'
-import { SPORT_TYPE_OPTIONS } from '@/lib/mock/data/metadata'
+import { useMetadata } from '@/contexts/MetadataContext'
 import type { Court, Venue } from '@/types/models'
 import { useSearchParams, useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
 
 export default function CourtsPage() {
+  const { sportTypes } = useMetadata()
   const router = useRouter()
   const searchParams = useSearchParams()
   const venueIdParam = searchParams.get('venueId')
@@ -292,7 +293,7 @@ export default function CourtsPage() {
         configs={[
           { key: 'search', label: 'Search', type: 'search', placeholder: 'Search courts...' },
           { key: 'venueId', label: 'Venue', type: 'select', options: venueOptions },
-          { key: 'sportType', label: 'Sport Type', type: 'select', options: SPORT_TYPE_OPTIONS.map(s => ({ label: s, value: s })) },
+          { key: 'sportType', label: 'Sport Type', type: 'select', options: sportTypes.map(s => ({ label: s.name, value: s.name })) },
           { key: 'status', label: 'Status', type: 'select', options: [{ label: 'Active', value: 'ACTIVE' }, { label: 'Inactive', value: 'INACTIVE' }] },
         ]}
         onFilterChange={handleFilterChange}

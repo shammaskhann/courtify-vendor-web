@@ -469,6 +469,11 @@ export function CourtForm({ initialData, venues, preselectedVenueId, onSubmit, o
                     required
                     value={formData.peakStartTime}
                     onChange={(e) => setFormData({ ...formData, peakStartTime: e.target.value })}
+                    onClick={(e) => {
+                      try {
+                        ;(e.target as HTMLInputElement).showPicker()
+                      } catch (err) {}
+                    }}
                   />
                   <Input
                     label="Peak End Time"
@@ -476,6 +481,11 @@ export function CourtForm({ initialData, venues, preselectedVenueId, onSubmit, o
                     required
                     value={formData.peakEndTime}
                     onChange={(e) => setFormData({ ...formData, peakEndTime: e.target.value })}
+                    onClick={(e) => {
+                      try {
+                        ;(e.target as HTMLInputElement).showPicker()
+                      } catch (err) {}
+                    }}
                   />
                 </div>
               )}

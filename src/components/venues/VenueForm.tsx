@@ -10,6 +10,7 @@ import { uploadVenueImage } from '@/lib/api/uploadApi'
 import dynamic from 'next/dynamic'
 
 const MapDialog = dynamic(() => import('@/components/common/MapDialog').then(mod => mod.MapDialog), { ssr: false })
+const VenueMap = dynamic(() => import('@/components/common/VenueMap').then(mod => mod.VenueMap), { ssr: false })
 
 interface VenueFormProps {
   initialData?: any
@@ -357,17 +358,36 @@ export function VenueForm({ initialData, onSubmit, onCancel, editSection }: Venu
               </Button>
             </div>
             
-            <button 
-              type="button"
-              className="w-full h-32 border-2 border-dashed border-border rounded-lg bg-background hover:bg-surface hover:border-brand/50 transition-colors flex flex-col items-center justify-center gap-2 group relative"
-              onClick={() => setIsMapOpen(true)}
-              disabled={isGettingLocation}
-            >
-              <MapIcon className={`text-tertiary group-hover:text-brand transition-colors ${isGettingLocation ? 'opacity-50' : ''}`} size={32} />
-              <span className={`text-body-sm text-tertiary group-hover:text-primary transition-colors ${isGettingLocation ? 'opacity-50' : ''}`}>
-                {isGettingLocation ? 'Loading address...' : (formData.latitude ? 'Update selected location' : 'Click to open map and select location')}
-              </span>
-            </button>
+            <div className="w-full relative rounded-lg overflow-hidden border-2 border-border group">
+              {formData.latitude ? (
+                <div className="w-full h-32 relative">
+                  <div className="absolute inset-0 pointer-events-none z-10" />
+                  <VenueMap lat={formData.latitude} lng={formData.longitude} height="8rem" />
+                  <button 
+                    type="button"
+                    className="absolute inset-0 z-20 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={() => setIsMapOpen(true)}
+                    disabled={isGettingLocation}
+                  >
+                    <span className="bg-surface px-4 py-2 rounded-md text-body-sm font-medium shadow-md">
+                      Update Location
+                    </span>
+                  </button>
+                </div>
+              ) : (
+                <button 
+                  type="button"
+                  className="w-full h-32 border-dashed bg-background hover:bg-surface hover:border-brand/50 transition-colors flex flex-col items-center justify-center gap-2"
+                  onClick={() => setIsMapOpen(true)}
+                  disabled={isGettingLocation}
+                >
+                  <MapIcon className={`text-tertiary group-hover:text-brand transition-colors ${isGettingLocation ? 'opacity-50' : ''}`} size={32} />
+                  <span className={`text-body-sm text-tertiary group-hover:text-primary transition-colors ${isGettingLocation ? 'opacity-50' : ''}`}>
+                    {isGettingLocation ? 'Loading address...' : 'Click to open map and select location'}
+                  </span>
+                </button>
+              )}
+            </div>
             
             <div className="space-y-4 pt-2">
               <Dropdown
@@ -428,6 +448,11 @@ export function VenueForm({ initialData, onSubmit, onCancel, editSection }: Venu
                 required
                 value={formData.openingTime}
                 onChange={(e) => setFormData({ ...formData, openingTime: e.target.value })}
+                onClick={(e) => {
+                  try {
+                    ;(e.target as HTMLInputElement).showPicker()
+                  } catch (err) {}
+                }}
               />
               <Input
                 label="Closing Time"
@@ -435,6 +460,11 @@ export function VenueForm({ initialData, onSubmit, onCancel, editSection }: Venu
                 required
                 value={formData.closingTime}
                 onChange={(e) => setFormData({ ...formData, closingTime: e.target.value })}
+                onClick={(e) => {
+                  try {
+                    ;(e.target as HTMLInputElement).showPicker()
+                  } catch (err) {}
+                }}
               />
             </div>
           </div>

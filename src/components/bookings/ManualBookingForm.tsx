@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useRef } from 'react'
 import { SlideOver } from '../ui/SlideOver'
 import { Button } from '../ui/Button'
 import { Input } from '../forms/Input'
@@ -53,6 +53,7 @@ export function ManualBookingForm({ isOpen, onClose, venues, onCreated }: Manual
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [priceTouched, setPriceTouched] = useState(false)
+  const formRef = useRef<HTMLFormElement>(null)
 
   const [form, setForm] = useState({
     venueId: '',
@@ -171,13 +172,13 @@ export function ManualBookingForm({ isOpen, onClose, venues, onCreated }: Manual
           <Button variant="secondary" onClick={resetAndClose} className="mr-auto">
             Cancel
           </Button>
-          <Button type="submit" form="manual-booking-form" variant="primary" isLoading={isSubmitting}>
+          <Button onClick={() => formRef.current?.requestSubmit()} variant="primary" isLoading={isSubmitting}>
             Create booking
           </Button>
         </>
       }
     >
-      <form id="manual-booking-form" onSubmit={handleSubmit} className="space-y-6">
+      <form ref={formRef} id="manual-booking-form" onSubmit={handleSubmit} className="space-y-6">
         {error && (
           <div className="p-3 rounded-lg bg-error/10 border border-error/20 text-error-text text-body-sm">
             {error}
@@ -219,6 +220,11 @@ export function ManualBookingForm({ isOpen, onClose, venues, onCreated }: Manual
               required
               value={form.startTime}
               onChange={(e) => update({ startTime: e.target.value })}
+              onClick={(e) => {
+                try {
+                  ;(e.target as HTMLInputElement).showPicker()
+                } catch (err) {}
+              }}
             />
           </div>
 
