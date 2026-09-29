@@ -58,6 +58,45 @@ export async function getCourtById(id: string): Promise<Court | null> {
   return res.data
 }
 
+/** Envelope shapes `GET /public/courts/{id}` may return. */
+type PublicCourtResponse =
+  | Court
+  | Court[]
+  | { data?: Court }
+  | { data?: Court[] }
+  | { content?: Court[] }
+
+/** Narrows the several envelope shapes this endpoint has been seen to return. */
+function unwrapCourt(payload: PublicCourtResponse | null | undefined): Court | null {
+  if (!payload) return null
+  if (Array.isArray(payload)) return payload[0] ?? null
+  const record = payload as Record<string, unknown>
+
+  if (Array.isArray(record.content)) return (record.content[0] as Court) ?? null
+  if (Array.isArray(record.data)) return (record.data[0] as Court) ?? null
+  if (record.data && typeof record.data === 'object') return record.data as Court
+  if (record.id !== undefined) return payload as Court
+  return null
+}
+
+/**
+ * Public court lookup — no role required. Admin surfaces use
+ * `getAdminCourtById` instead, which requires the ADMIN role.
+ *
+ * The response carries the moderation flags `isApproved` / `isDisabled`.
+ */
+export async function getPublicCourtById(id: string | number): Promise<Court> {
+  const res = await api.get<PublicCourtResponse>(`/public/courts/${id}`)
+  if (res.error) {
+    const err = new Error(res.error) as Error & { statusCode?: number }
+    err.statusCode = res.statusCode
+    throw err
+  }
+  const court = unwrapCourt(res.data)
+  if (!court) throw new Error('Court not found')
+  return court
+}
+
 export async function createCourt(venueId: string, data: Omit<Court, 'id' | 'venueId' | 'createdAt'>): Promise<Court> {
   const res = await api.post<Court>(`/court-owner/courts/venues/${venueId}/court`, data)
   if (res.error) throw new Error(res.error)

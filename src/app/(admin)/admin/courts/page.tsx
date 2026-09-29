@@ -3,17 +3,21 @@
 import { useState, useEffect } from 'react'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { FilterBar } from '@/components/ui/FilterBar'
-import { DataTable } from '@/components/ui/DataTable'
 import { Button } from '@/components/ui/Button'
 import { ConfirmationModal } from '@/components/ui/ConfirmationModal'
-import { StatusBadge } from '@/components/ui/StatusBadge'
-import { RefreshCw, CheckCircle, XCircle, RotateCcw, Star } from 'lucide-react'
+import { AdminCourtCard } from '@/components/admin/AdminCourtCard'
+import { RefreshCw, SearchX } from 'lucide-react'
 import { getPendingCourts, searchCourts, approveCourt, disableCourt, enableCourt } from '@/lib/api/adminApi'
+import { getCourtStatus } from '@/lib/venue'
+import { cn } from '@/lib/utils'
 import toast from 'react-hot-toast'
-import Link from 'next/link'
 import type { Court } from '@/types/models'
 
 type TabType = 'PENDING' | 'ALL'
+type CourtAction = 'APPROVE' | 'DISABLE' | 'ENABLE'
+type Filters = Record<string, string>
+
+const PAGE_SIZE = 20
 
 export default function AdminCourtsPage() {
   const [activeTab, setActiveTab] = useState<TabType>('PENDING')
@@ -22,24 +26,24 @@ export default function AdminCourtsPage() {
   const [page, setPage] = useState(0)
   const [totalPages, setTotalPages] = useState(1)
   const [totalElements, setTotalElements] = useState(0)
-  const [filters, setFilters] = useState<Record<string, any>>({})
-  const [confirm, setConfirm] = useState<{ open: boolean; court?: Court; action?: 'APPROVE' | 'DISABLE' | 'ENABLE' }>({ open: false })
+  const [filters, setFilters] = useState<Filters>({})
+  const [confirm, setConfirm] = useState<{ open: boolean; court?: Court; action?: CourtAction }>({ open: false })
 
   const fetchCourts = async () => {
     setLoading(true)
     try {
-      let resp
-      if (activeTab === 'PENDING') {
-        resp = await getPendingCourts(page, 20)
-      } else {
-        resp = await searchCourts({ page, size: 20, ...filters })
-      }
+      const resp =
+        activeTab === 'PENDING'
+          ? await getPendingCourts(page, PAGE_SIZE)
+          : await searchCourts({ page, size: PAGE_SIZE, ...filters })
       setCourts(resp.data || [])
-      setTotalPages(Math.max(1, Math.ceil(resp.total / 20)))
+      setTotalPages(Math.max(1, Math.ceil(resp.total / PAGE_SIZE)))
       setTotalElements(resp.total)
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to load courts')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to load courts')
       setCourts([])
+      setTotalPages(1)
+      setTotalElements(0)
     } finally {
       setLoading(false)
     }
@@ -49,7 +53,13 @@ export default function AdminCourtsPage() {
     fetchCourts()
   }, [activeTab, page, filters])
 
-  const openConfirm = (court: Court, action: 'APPROVE' | 'DISABLE' | 'ENABLE') => {
+  const switchTab = (tab: TabType) => {
+    setActiveTab(tab)
+    setPage(0)
+    setFilters({})
+  }
+
+  const openConfirm = (court: Court, action: CourtAction) => {
     setConfirm({ open: true, court, action })
   }
 
@@ -59,139 +69,78 @@ export default function AdminCourtsPage() {
       if (confirm.action === 'APPROVE') await approveCourt(confirm.court.id)
       else if (confirm.action === 'DISABLE') await disableCourt(confirm.court.id)
       else if (confirm.action === 'ENABLE') await enableCourt(confirm.court.id)
-      
-      toast.success(`Court successfully ${confirm.action.toLowerCase()}d!`)
+
+      toast.success(`Court ${confirm.action.toLowerCase()}d successfully`)
       setConfirm({ open: false })
       fetchCourts()
-    } catch (err: any) {
-      toast.error(err.message || 'Action failed')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Action failed')
     }
   }
 
-  const getStatus = (court: Court) => {
-    if (court.isDisabled) return 'DISABLED'
-    if ((court as any).isApproved === false) return 'PENDING'
-    return 'APPROVED'
-  }
-
   const getConfirmProps = () => {
-    if (!confirm.action || !confirm.court) return { title: '', message: '', type: 'danger' as const }
-    const name = confirm.court.name
+    if (!confirm.action || !confirm.court) return { title: '', message: '' }
+    const name = confirm.court.name || confirm.court.courtName || 'this court'
     switch (confirm.action) {
-      case 'APPROVE': return { title: 'Approve Court', message: `Approve "${name}"?`, type: 'info' as const }
-      case 'DISABLE': return { title: 'Disable Court', message: `Disable "${name}"?`, type: 'danger' as const }
-      case 'ENABLE': return { title: 'Re-enable Court', message: `Re-enable "${name}"?`, type: 'info' as const }
+      case 'APPROVE':
+        return {
+          title: 'Approve Court',
+          message: `Approve "${name}"? It will become bookable at its venue.`,
+        }
+      case 'DISABLE':
+        return {
+          title: 'Disable Court',
+          message: `Disable "${name}"? It will stop accepting bookings and be hidden from listings.`,
+        }
+      case 'ENABLE':
+        return { title: 'Re-enable Court', message: `Re-enable "${name}"? It will accept bookings again.` }
     }
   }
 
   const confirmProps = getConfirmProps()
-
-  const columns = [
-    {
-      header: 'Court & Sport',
-      accessor: (row: Court) => (
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-brand/10 flex items-center justify-center font-bold text-brand">
-            {(row.name || '?')[0].toUpperCase()}
-          </div>
-          <div className="flex flex-col">
-            <p className="font-medium text-primary max-w-[200px] truncate" title={row.name}>{row.name}</p>
-            <span className="text-xs text-secondary">{row.sportType || 'Unknown Sport'}</span>
-          </div>
-        </div>
-      )
-    },
-    {
-      header: 'Pricing',
-      accessor: (row: Court) => (
-        <div className="flex flex-col">
-          <span className="text-sm font-medium text-primary">{row.pricingType || '—'}</span>
-          <span className="text-xs text-secondary">Base: PKR {row.constantPriceOffPeak || 0}</span>
-        </div>
-      )
-    },
-    {
-      header: 'Rating',
-      accessor: (row: Court) => {
-        if (!row.reviewCount) return <span className="text-secondary text-xs">No reviews</span>
-        return (
-          <Link 
-            href={`/admin/reviews?courtId=${row.id}`}
-            className="flex items-center gap-1 text-sm hover:text-brand transition-colors"
-          >
-            <Star size={14} className="fill-brand text-brand" />
-            <span className="font-medium">{row.avgRating?.toFixed(1) || '0.0'}</span>
-            <span className="text-secondary text-xs">({row.reviewCount})</span>
-          </Link>
-        )
-      }
-    },
-    {
-      header: 'Status',
-      accessor: (row: Court) => {
-        const status = getStatus(row)
-        if (status === 'APPROVED') return <StatusBadge status="ACTIVE" />
-        if (status === 'DISABLED') return <StatusBadge status="DISABLED" />
-        return <StatusBadge status="PENDING" />
-      }
-    },
-    {
-      header: 'Actions',
-      align: 'right' as const,
-      accessor: (row: Court) => {
-        const status = getStatus(row)
-        return (
-          <div className="flex items-center justify-end gap-1">
-            {status === 'PENDING' && (
-              <Button size="sm" variant="ghost" className="text-success hover:bg-success/10 h-8" onClick={() => openConfirm(row, 'APPROVE')}>
-                <CheckCircle size={16} className="mr-1" /> Approve
-              </Button>
-            )}
-            {status === 'APPROVED' && (
-              <Button size="sm" variant="ghost" className="text-error hover:bg-error/10 h-8" onClick={() => openConfirm(row, 'DISABLE')}>
-                <XCircle size={16} className="mr-1" /> Disable
-              </Button>
-            )}
-            {status === 'DISABLED' && (
-              <Button size="sm" variant="ghost" className="text-secondary hover:bg-surface-variant h-8" onClick={() => openConfirm(row, 'ENABLE')}>
-                <RotateCcw size={16} className="mr-1" /> Enable
-              </Button>
-            )}
-          </div>
-        )
-      }
-    }
-  ]
+  const hasFilters = Object.values(filters).some(Boolean)
+  const counts = {
+    approved: courts.filter(c => getCourtStatus(c) === 'APPROVED').length,
+    pending: courts.filter(c => getCourtStatus(c) === 'PENDING').length,
+    disabled: courts.filter(c => getCourtStatus(c) === 'DISABLED').length,
+  }
 
   return (
     <div className="flex flex-col gap-6 pb-8">
       <PageHeader
         title="Courts Management"
-        subtitle="Manage, approve, or disable courts."
+        subtitle="Review, approve, or take courts offline."
         actions={
-          <Button variant="secondary" size="icon" onClick={fetchCourts} title="Refresh">
-            <RefreshCw size={16} />
+          <Button
+            variant="secondary"
+            size="icon"
+            onClick={fetchCourts}
+            title="Refresh"
+            aria-label="Refresh courts"
+          >
+            <RefreshCw size={16} className={loading ? 'animate-spin' : undefined} />
           </Button>
         }
       />
 
-      <div className="flex border-b border-border gap-6">
-        <button
-          className={`pb-3 font-medium transition-colors text-sm ${
-            activeTab === 'PENDING' ? 'border-b-2 border-brand text-brand' : 'text-secondary hover:text-primary'
-          }`}
-          onClick={() => { setActiveTab('PENDING'); setPage(0); setFilters({}); }}
-        >
-          Pending Approval
-        </button>
-        <button
-          className={`pb-3 font-medium transition-colors text-sm ${
-            activeTab === 'ALL' ? 'border-b-2 border-brand text-brand' : 'text-secondary hover:text-primary'
-          }`}
-          onClick={() => { setActiveTab('ALL'); setPage(0); setFilters({}); }}
-        >
-          All Courts
-        </button>
+      <div className="flex gap-1 rounded-lg bg-surface-variant p-1 sm:w-fit">
+        {([
+          { key: 'PENDING' as const, label: 'Pending Approval' },
+          { key: 'ALL' as const, label: 'All Courts' },
+        ]).map(tab => (
+          <button
+            key={tab.key}
+            onClick={() => switchTab(tab.key)}
+            className={cn(
+              'flex-1 rounded-md px-4 py-1.5 text-body-sm font-medium transition-colors sm:flex-none',
+              activeTab === tab.key
+                ? 'bg-surface text-primary shadow-sm'
+                : 'text-secondary hover:text-primary'
+            )}
+          >
+            {tab.label}
+          </button>
+        ))}
       </div>
 
       {activeTab === 'ALL' && (
@@ -199,50 +148,100 @@ export default function AdminCourtsPage() {
           configs={[
             { key: 'keyword', label: 'Search', type: 'search', placeholder: 'Court name...' },
             { key: 'city', label: 'City', type: 'search', placeholder: 'e.g. Lahore' },
-            { key: 'sportType', label: 'Sport', type: 'search', placeholder: 'e.g. Futsal' }
+            { key: 'sportType', label: 'Sport', type: 'search', placeholder: 'e.g. Futsal' },
           ]}
-          onFilterChange={(f) => {
-            setFilters(f)
+          onFilterChange={f => {
+            setFilters(f as Filters)
             setPage(0)
           }}
         />
       )}
 
-      <div className="bg-surface rounded-xl border border-border overflow-hidden">
-        <DataTable
-          columns={columns as any}
-          data={courts}
-          isLoading={loading}
-          keyExtractor={(row) => row.id.toString()}
-          emptyStateTitle={activeTab === 'PENDING' ? 'No pending courts' : 'No courts found.'}
-        />
-        
-        {totalPages > 1 && (
-          <div className="p-4 border-t border-border flex items-center justify-between">
-            <span className="text-sm text-secondary">
-              Showing page {page + 1} of {totalPages} ({totalElements} total)
-            </span>
-            <div className="flex items-center gap-2">
-              <Button 
-                variant="secondary" 
-                size="sm" 
-                disabled={page === 0}
-                onClick={() => setPage(p => Math.max(0, p - 1))}
-              >
-                Previous
-              </Button>
-              <Button 
-                variant="secondary" 
-                size="sm" 
-                disabled={page >= totalPages - 1}
-                onClick={() => setPage(p => p + 1)}
-              >
-                Next
-              </Button>
+      {!loading && activeTab === 'ALL' && !hasFilters && (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <SummaryTile label="On this page" value={courts.length} tone="neutral" />
+          <SummaryTile label="Active" value={counts.approved} tone="success" />
+          <SummaryTile label="Pending" value={counts.pending} tone="warning" />
+          <SummaryTile label="Disabled" value={counts.disabled} tone="error" />
+        </div>
+      )}
+
+      {loading ? (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div
+              key={i}
+              className="flex flex-col overflow-hidden rounded-xl border border-border bg-surface animate-pulse"
+            >
+              <div className="h-28 w-full bg-surface-variant" />
+              <div className="flex flex-col gap-2.5 p-4">
+                <div className="h-4 w-2/3 rounded bg-surface-variant" />
+                <div className="h-3 w-1/2 rounded bg-surface-variant" />
+                <div className="h-3 w-1/3 rounded bg-surface-variant" />
+              </div>
             </div>
+          ))}
+        </div>
+      ) : courts.length === 0 ? (
+        <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border-strong bg-surface px-6 py-16 text-center">
+          <SearchX size={32} className="text-tertiary" />
+          <p className="text-body font-medium text-primary">
+            {activeTab === 'PENDING'
+              ? 'No pending courts'
+              : hasFilters
+                ? 'No courts match your filters'
+                : 'No courts found'}
+          </p>
+          <p className="max-w-sm text-body-sm text-secondary">
+            {activeTab === 'PENDING'
+              ? 'Every court has been reviewed. New submissions will appear here.'
+              : hasFilters
+                ? 'Try a different court name, city or sport.'
+                : 'No courts have been registered yet.'}
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {courts.map(court => (
+            <AdminCourtCard
+              key={court.id}
+              court={court}
+              linkToDetail
+              showVenueName
+              onApprove={c => openConfirm(c, 'APPROVE')}
+              onDisable={c => openConfirm(c, 'DISABLE')}
+              onEnable={c => openConfirm(c, 'ENABLE')}
+            />
+          ))}
+        </div>
+      )}
+
+      {totalPages > 1 && (
+        <div className="flex flex-col items-center justify-between gap-3 rounded-xl border border-border bg-surface p-4 shadow-sm sm:flex-row">
+          <p className="text-body-sm text-secondary">
+            Page <span className="font-medium text-primary">{page + 1}</span> of {totalPages}
+            <span className="text-tertiary"> · {totalElements} courts total</span>
+          </p>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled={page === 0 || loading}
+              onClick={() => setPage(p => Math.max(0, p - 1))}
+            >
+              Previous
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled={page >= totalPages - 1 || loading}
+              onClick={() => setPage(p => p + 1)}
+            >
+              Next
+            </Button>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       <ConfirmationModal
         isOpen={confirm.open}
@@ -250,9 +249,35 @@ export default function AdminCourtsPage() {
         onConfirm={handleAction}
         title={confirmProps.title}
         message={confirmProps.message}
-        confirmVariant={confirmProps.type === 'danger' ? 'danger' : 'primary'}
-        confirmLabel={confirm.action === 'APPROVE' ? 'Approve' : confirm.action === 'DISABLE' ? 'Disable' : 'Enable'}
+        confirmVariant={confirm.action === 'DISABLE' ? 'danger' : 'primary'}
+        confirmLabel={
+          confirm.action === 'APPROVE' ? 'Approve' : confirm.action === 'DISABLE' ? 'Disable' : 'Enable'
+        }
       />
+    </div>
+  )
+}
+
+function SummaryTile({
+  label,
+  value,
+  tone,
+}: {
+  label: string
+  value: number
+  tone: 'neutral' | 'success' | 'warning' | 'error'
+}) {
+  const toneClass = {
+    neutral: 'text-primary',
+    success: 'text-success-text',
+    warning: 'text-warning-text',
+    error: 'text-error-text',
+  }[tone]
+
+  return (
+    <div className="rounded-lg border border-border bg-surface p-3 shadow-sm">
+      <p className="text-caption font-medium uppercase tracking-wide text-tertiary">{label}</p>
+      <p className={cn('mt-1 text-h3 font-semibold', toneClass)}>{value}</p>
     </div>
   )
 }

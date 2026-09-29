@@ -87,8 +87,8 @@ export interface Court {
   pricingType: PricingType
   images: string[]
   isDisabled: boolean
+  isApproved?: boolean
   createdAt: string
-  // CONSTANT pricing
   constantPriceOffPeak?: number
   constantPricePeak?: number | null
   // WEEKDAY_WEEKEND pricing
@@ -106,6 +106,10 @@ export interface Court {
   reviewCount?: number
   avgRating?: number
   latestReviews?: ReviewResponse[]
+  // Included on admin reads (GET /admin/courts/{id}). The venue shape has not
+  // been confirmed against AdminVenue, so it is not assumed complete.
+  venue?: Partial<AdminVenue>
+  activeDeals?: Deal[]
 }
 
 export interface Booking {
@@ -272,6 +276,11 @@ export interface AdminVenue {
   ownerEmail?: string
   contactNo?: string
   courts?: Court[]
+  venueImage?: string
+  image?: string
+  description?: string
+  amenities?: string[]
+  courtCount?: number
 }
 
 export interface CommonItem {

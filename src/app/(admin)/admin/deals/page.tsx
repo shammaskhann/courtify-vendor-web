@@ -41,18 +41,26 @@ export default function AdminDealsPage() {
       header: 'Deal Code / Title',
       accessor: (row: any) => (
         <div className="flex flex-col">
-          <span className="font-medium text-primary">{row.title || row.code || 'Unnamed Deal'}</span>
-          <span className="text-sm text-secondary">{row.dealType}</span>
+          <span className="font-medium text-primary">{row.name || 'Unnamed Deal'}</span>
+          <span className="text-sm text-secondary">{row.promoCode || row.dealType}</span>
         </div>
       )
     },
     {
       header: 'Value',
-      accessor: (row: any) => (
-        <span className="font-medium text-brand">
-          {row.dealType === 'PERCENTAGE' ? `${row.dealValue}% OFF` : `PKR ${row.dealValue}`}
-        </span>
-      )
+      accessor: (row: any) => {
+        let valueDisplay = `PKR ${row.dealValue || 0}`;
+        if (row.dealType === 'PERCENTAGE_OFF' || row.dealType === 'PERCENTAGE') {
+          valueDisplay = `${row.dealValue || 0}% OFF`;
+        } else if (row.dealType === 'BUY_X_GET_Y') {
+          valueDisplay = `Buy ${row.buyQuantity || 'X'} Get ${row.getFreeQuantity || 'Y'} Free`;
+        }
+        return (
+          <span className="font-medium text-brand">
+            {valueDisplay}
+          </span>
+        );
+      }
     },
     {
       header: 'Validity',

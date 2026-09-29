@@ -58,31 +58,23 @@ export default function AdminBookingsPage() {
 
   const columns = [
     {
-      header: 'ID / Ref',
+      header: 'ID',
       accessor: (b: Booking) => (
-        <div className="flex flex-col">
-          <span className="font-medium text-primary">#{b.id}</span>
-          <span className="text-xs text-secondary">{b.bookingReference || '-'}</span>
-        </div>
+        <span className="font-medium text-primary">#{b.id}</span>
       )
     },
     {
-      header: 'Customer',
-      accessor: (booking: Booking) => (
-        <div className="flex flex-col">
-          <span className="font-medium text-primary">{booking.customerName}</span>
-          <span className="text-xs text-secondary">{booking.customerContact}</span>
-        </div>
-      ),
-    },
-    {
       header: 'Venue & Court',
-      accessor: (booking: Booking) => (
-        <div className="flex flex-col max-w-[200px]">
-          <span className="font-medium text-primary truncate" title={booking.venueName}>{booking.venueName || '-'}</span>
-          <span className="text-xs text-secondary truncate" title={booking.courtName}>{booking.courtName}</span>
-        </div>
-      ),
+      accessor: (booking: Booking) => {
+        const displayString = booking.courtName || booking.venueName || '-';
+        return (
+          <div className="flex items-center max-w-[250px]">
+            <span className="font-medium text-primary truncate" title={displayString}>
+              {displayString}
+            </span>
+          </div>
+        );
+      },
     },
     {
       header: 'Date & Time',
