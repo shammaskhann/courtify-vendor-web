@@ -36,7 +36,7 @@ export default function AdminReviewsPage() {
     maxRating: filters.maxRating ? Number(filters.maxRating) : undefined,
     sort: filters.sort,
     page,
-    size: 20
+    size: 50
   })
 
   const deleteMutation = useDeleteReview()

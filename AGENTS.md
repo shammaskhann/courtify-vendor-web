@@ -1,8 +1,3 @@
-<!-- BEGIN:nextjs-agent-rules -->
-# This is NOT the Next.js you know
-
-This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
-<!-- END:nextjs-agent-rules -->
 
 # Courtify Vendor Panel
 
@@ -28,10 +23,19 @@ for caching). This repo is frontend only.
 
 ## Known backend behaviours that affect this code
 
+- **Single-court reads have two routes.** Admin surfaces use
+  `GET /admin/courts/{courtId}` (`getAdminCourtById` in `src/lib/api/adminApi.ts`),
+  which requires the `ADMIN` role and returns the same `CourtResponse` DTO. The
+  unauthenticated `GET /public/courts/{id}` (`getPublicCourtById` in
+  `src/lib/api/courtApi.ts`) is the player-facing read; the admin detail page
+  must not fall back to it, or a `403` from a non-admin session gets hidden. Both
+  DTOs carry `venueId`, `isApproved` and `isDisabled`, so moderation status needs
+  no second call.
 - **Auth failures return `403`, not `401`.** `api-client.ts` only clears the
   session on `401`, so an invalid token leaves the user stuck on a broken page
   with no redirect to login. Unresolved — decide whether the frontend handles
-  `403` or the backend starts returning `401`.
+  `403` or the backend starts returning `401`. On admin routes a `403` may also
+  just mean the session lacks the `ADMIN` role, which is not a session problem.
 - `/common/sport-types` returns **500 when Redis is down**. Sport chips in
   `CourtForm` go empty. Cities and amenities are unaffected.
 - Error responses often have an **empty body**, so `data?.message` is undefined.

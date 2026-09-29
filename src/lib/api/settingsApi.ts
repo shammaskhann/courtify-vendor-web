@@ -11,6 +11,8 @@ import { api } from '@/lib/api-client'
 export interface VendorProfileInput {
   name: string
   isNotificationsEnabled: boolean
+  playerBio?: string
+  isPublicProfile?: boolean
 }
 
 export interface UserProfile {
@@ -20,16 +22,23 @@ export interface UserProfile {
   contact: string
   isNotificationsEnabled: boolean
   role: string
+  playerBio?: string
+  isPublicProfile?: boolean
 }
 
 export async function getVendorProfile(): Promise<UserProfile> {
-  const res = await api.get<UserProfile>('/court-owner/profile')
+  const res = await api.get<UserProfile>('/vendor/profile')
   if (res.error) throw new Error(res.error)
   return res.data as UserProfile
 }
 
 export async function updateVendorProfile(data: VendorProfileInput): Promise<void> {
-  const res = await api.patch('/court-owner/profile', data)
+  const res = await api.patch('/vendor/profile', data)
+  if (res.error) throw new Error(res.error)
+}
+
+export async function deleteVendorAccount(): Promise<void> {
+  const res = await api.delete('/vendor/profile')
   if (res.error) throw new Error(res.error)
 }
 
@@ -40,5 +49,17 @@ export interface ChangePasswordInput {
 
 export async function changePassword(data: ChangePasswordInput): Promise<void> {
   const res = await api.post('/auth/password/update', data)
+  if (res.error) throw new Error(res.error)
+}
+
+export interface NotificationPreferencesInput {
+  pushEnabled: boolean
+  chatAlerts: boolean
+  bookingAlerts: boolean
+  marketingAlerts: boolean
+}
+
+export async function updateNotificationPreferences(data: NotificationPreferencesInput): Promise<void> {
+  const res = await api.put('/court-owner/notification-preferences', data)
   if (res.error) throw new Error(res.error)
 }

@@ -1,37 +1,38 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { FilterBar } from '@/components/ui/FilterBar'
-import { DataTable } from '@/components/ui/DataTable'
 import { Button } from '@/components/ui/Button'
 import { ConfirmationModal } from '@/components/ui/ConfirmationModal'
-import { StatusBadge } from '@/components/ui/StatusBadge'
-import { RefreshCw, CheckCircle, XCircle, RotateCcw, Eye } from 'lucide-react'
+import { AdminVenueCard } from '@/components/admin/AdminVenueCard'
+import { RefreshCw, SearchX } from 'lucide-react'
 import { getAdminVenues, getPendingVenues, approveVenue, disableVenue, enableVenue } from '@/lib/api/adminApi'
+import { getVenueDisplayName } from '@/lib/venue'
 import toast from 'react-hot-toast'
 import type { AdminVenue } from '@/types/models'
-import { ROUTES } from '@/lib/constants'
 
 type TabFilter = 'ALL' | 'PENDING'
+type VenueAction = 'APPROVE' | 'DISABLE' | 'ENABLE'
 
 export default function AdminVenuesPage() {
-  const router = useRouter()
   const [venues, setVenues] = useState<AdminVenue[]>([])
+  const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<TabFilter>('ALL')
   const [search, setSearch] = useState('')
-  const [confirm, setConfirm] = useState<{ open: boolean; venue?: AdminVenue; action?: 'APPROVE' | 'DISABLE' | 'ENABLE' }>({ open: false })
+  const [confirm, setConfirm] = useState<{ open: boolean; venue?: AdminVenue; action?: VenueAction }>({ open: false })
 
   const fetchVenues = async () => {
     setLoading(true)
     try {
       const resp = filter === 'PENDING' ? await getPendingVenues(0, 100) : await getAdminVenues(0, 100)
       setVenues(resp.data || [])
+      setTotal(resp.total ?? resp.data?.length ?? 0)
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to load venues')
       setVenues([])
+      setTotal(0)
     } finally {
       setLoading(false)
     }
@@ -41,7 +42,7 @@ export default function AdminVenuesPage() {
     fetchVenues()
   }, [filter])
 
-  const openConfirm = (venue: AdminVenue, action: 'APPROVE' | 'DISABLE' | 'ENABLE') => {
+  const openConfirm = (venue: AdminVenue, action: VenueAction) => {
     setConfirm({ open: true, venue, action })
   }
 
@@ -51,8 +52,8 @@ export default function AdminVenuesPage() {
       if (confirm.action === 'APPROVE') await approveVenue(confirm.venue.id)
       else if (confirm.action === 'DISABLE') await disableVenue(confirm.venue.id)
       else if (confirm.action === 'ENABLE') await enableVenue(confirm.venue.id)
-      
-      toast.success(`Venue successfully ${confirm.action.toLowerCase()}d!`)
+
+      toast.success(`Venue ${confirm.action.toLowerCase()}d successfully`)
       setConfirm({ open: false })
       fetchVenues()
     } catch (err) {
@@ -60,128 +61,135 @@ export default function AdminVenuesPage() {
     }
   }
 
-  const filtered = venues.filter(v => {
-    const q = search.toLowerCase()
-    return (v.businessName || v.name || '').toLowerCase().includes(q) || (v.city || '').toLowerCase().includes(q)
-  })
-
-  const getStatus = (venue: AdminVenue) => {
-    if (venue.isDisabled) return 'DISABLED'
-    if (venue.isApproved) return 'APPROVED'
-    return 'PENDING'
-  }
+  const query = search.trim().toLowerCase()
+  const filtered = query
+    ? venues.filter(v =>
+        getVenueDisplayName(v).toLowerCase().includes(query) ||
+        (v.city || '').toLowerCase().includes(query) ||
+        (v.address || '').toLowerCase().includes(query) ||
+        (v.ownerName || '').toLowerCase().includes(query)
+      )
+    : venues
 
   const getConfirmProps = () => {
-    if (!confirm.action || !confirm.venue) return { title: '', message: '', type: 'danger' as const }
-    const name = confirm.venue.businessName || confirm.venue.name
+    if (!confirm.action || !confirm.venue) return { title: '', message: '' }
+    const name = getVenueDisplayName(confirm.venue)
     switch (confirm.action) {
-      case 'APPROVE': return { title: 'Approve Venue', message: `Approve "${name}"? This will list it on Courtify and trigger a welcome notification.`, type: 'info' as const }
-      case 'DISABLE': return { title: 'Disable Venue', message: `Disable "${name}"? It will be removed from listings.`, type: 'danger' as const }
-      case 'ENABLE': return { title: 'Re-enable Venue', message: `Re-enable "${name}"?`, type: 'info' as const }
+      case 'APPROVE':
+        return {
+          title: 'Approve Venue',
+          message: `Approve "${name}"? This will list it on Courtify and trigger a welcome notification.`,
+        }
+      case 'DISABLE':
+        return { title: 'Disable Venue', message: `Disable "${name}"? It will be removed from listings.` }
+      case 'ENABLE':
+        return { title: 'Re-enable Venue', message: `Re-enable "${name}"? It will be listed again.` }
     }
   }
 
   const confirmProps = getConfirmProps()
-
-  const columns = [
-    { header: '#', accessor: (_: AdminVenue, i: number) => i + 1 },
-    {
-      header: 'Venue',
-      accessor: (row: AdminVenue) => (
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-surface-variant flex items-center justify-center font-bold text-primary">
-            {(row.businessName || row.name || '?')[0].toUpperCase()}
-          </div>
-          <div>
-            <p className="font-medium text-body">{row.businessName || row.name || 'Unnamed'}</p>
-            <span className="text-sm text-secondary">{row.address || '—'}</span>
-          </div>
-        </div>
-      )
-    },
-    { header: 'City', accessor: (row: AdminVenue) => row.city || '—' },
-    {
-      header: 'Status',
-      accessor: (row: AdminVenue) => {
-        const status = getStatus(row)
-        if (status === 'APPROVED') return <StatusBadge status="ACTIVE" />
-        if (status === 'DISABLED') return <StatusBadge status="DISABLED" />
-        return <StatusBadge status="PENDING" />
-      }
-    },
-    {
-      header: 'Actions',
-      accessor: (row: AdminVenue) => {
-        const status = getStatus(row)
-        return (
-          <div className="flex items-center justify-end gap-2">
-            <Button size="sm" variant="secondary" onClick={() => router.push(ROUTES.ADMIN_VENUE_DETAIL(row.id.toString()))}>
-              <Eye size={14} className="mr-1" /> View
-            </Button>
-            {status === 'PENDING' && (
-              <Button size="sm" variant="primary" onClick={() => openConfirm(row, 'APPROVE')}>
-                <CheckCircle size={14} className="mr-1" /> Approve
-              </Button>
-            )}
-            {status === 'APPROVED' && (
-              <Button size="sm" variant="destructive" onClick={() => openConfirm(row, 'DISABLE')}>
-                <XCircle size={14} className="mr-1" /> Disable
-              </Button>
-            )}
-            {status === 'DISABLED' && (
-              <Button size="sm" variant="secondary" onClick={() => openConfirm(row, 'ENABLE')}>
-                <RotateCcw size={14} className="mr-1" /> Enable
-              </Button>
-            )}
-          </div>
-        )
-      }
-    }
-  ]
+  const activeCount = filter === 'PENDING'
+    ? venues.length
+    : venues.filter(v => !v.isDisabled && v.isApproved).length
+  const disabledCount = venues.filter(v => v.isDisabled).length
+  const pendingCount = venues.filter(v => !v.isDisabled && !v.isApproved).length
 
   return (
     <div className="flex flex-col gap-6 pb-8">
       <PageHeader
         title="Venues"
-        subtitle={`${venues.length} venue${venues.length !== 1 ? 's' : ''} loaded`}
+        subtitle={`${loading ? 'Loading venues…' : `${filtered.length} of ${total} venue${total === 1 ? '' : 's'}`}`}
         actions={
-          <div className="flex items-center gap-4">
-            <div className="flex bg-surface-variant p-1 rounded-lg">
+          <div className="flex items-center gap-3">
+            <div className="flex rounded-lg bg-surface-variant p-1">
               <button
-                className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${filter === 'ALL' ? 'bg-surface shadow-sm text-primary' : 'text-secondary hover:text-primary'}`}
+                className={`rounded-md px-4 py-1.5 text-body-sm font-medium transition-colors ${
+                  filter === 'ALL' ? 'bg-surface text-primary shadow-sm' : 'text-secondary hover:text-primary'
+                }`}
                 onClick={() => setFilter('ALL')}
               >
                 All Venues
               </button>
               <button
-                className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${filter === 'PENDING' ? 'bg-surface shadow-sm text-primary' : 'text-secondary hover:text-primary'}`}
+                className={`rounded-md px-4 py-1.5 text-body-sm font-medium transition-colors ${
+                  filter === 'PENDING' ? 'bg-surface text-primary shadow-sm' : 'text-secondary hover:text-primary'
+                }`}
                 onClick={() => setFilter('PENDING')}
               >
                 Pending
               </button>
             </div>
-            <Button variant="secondary" size="icon" onClick={fetchVenues} title="Refresh">
-              <RefreshCw size={16} />
+            <Button variant="secondary" size="icon" onClick={fetchVenues} title="Refresh" aria-label="Refresh venues">
+              <RefreshCw size={16} className={loading ? 'animate-spin' : undefined} />
             </Button>
           </div>
         }
       />
 
       <FilterBar
-        configs={[{ key: 'search', label: 'Search', type: 'search', placeholder: 'Search by name or city...' }]}
+        configs={[
+          {
+            key: 'search',
+            label: 'Search',
+            type: 'search',
+            placeholder: 'Search by name, city, address or owner...',
+          },
+        ]}
         onFilterChange={(f) => setSearch(f.search || '')}
       />
 
-      <div className="bg-surface rounded-xl border border-border overflow-hidden">
-        <DataTable
-          columns={columns as any}
-          data={filtered}
-          isLoading={loading}
-          keyExtractor={(row) => row.id.toString()}
-          emptyStateTitle={search ? 'No venues match your search.' : 'No venues found.'}
-          emptyStateDescription=""
-        />
-      </div>
+      {!loading && !query && filter === 'ALL' && venues.length > 0 && (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <SummaryTile label="Live" value={activeCount} tone="success" />
+          <SummaryTile label="Pending" value={pendingCount} tone="warning" />
+          <SummaryTile label="Disabled" value={disabledCount} tone="error" />
+          <SummaryTile label="Total loaded" value={venues.length} tone="neutral" />
+        </div>
+      )}
+
+      {loading ? (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div
+              key={i}
+              className="flex flex-col overflow-hidden rounded-xl border border-border bg-surface animate-pulse"
+            >
+              <div className="h-32 w-full bg-surface-variant" />
+              <div className="flex flex-col gap-2.5 p-4">
+                <div className="h-5 w-3/4 rounded bg-surface-variant" />
+                <div className="h-4 w-full rounded bg-surface-variant" />
+                <div className="h-4 w-1/2 rounded bg-surface-variant" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border-strong bg-surface px-6 py-16 text-center">
+          <SearchX size={32} className="text-tertiary" />
+          <p className="text-body font-medium text-primary">
+            {query ? 'No venues match your search' : 'No venues found'}
+          </p>
+          <p className="max-w-sm text-body-sm text-secondary">
+            {query
+              ? 'Try a different name, city, address or owner.'
+              : filter === 'PENDING'
+                ? 'There are no venues waiting for approval right now.'
+                : 'No venues have been registered yet.'}
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {filtered.map(venue => (
+            <AdminVenueCard
+              key={venue.id}
+              venue={venue}
+              onApprove={v => openConfirm(v, 'APPROVE')}
+              onDisable={v => openConfirm(v, 'DISABLE')}
+              onEnable={v => openConfirm(v, 'ENABLE')}
+            />
+          ))}
+        </div>
+      )}
 
       <ConfirmationModal
         isOpen={confirm.open}
@@ -189,9 +197,35 @@ export default function AdminVenuesPage() {
         onConfirm={handleAction}
         title={confirmProps.title}
         message={confirmProps.message}
-        confirmVariant={confirmProps.type === 'danger' ? 'danger' : 'primary'}
-        confirmLabel={confirm.action === 'APPROVE' ? 'Approve' : confirm.action === 'DISABLE' ? 'Disable' : 'Enable'}
+        confirmVariant={confirm.action === 'DISABLE' ? 'danger' : 'primary'}
+        confirmLabel={
+          confirm.action === 'APPROVE' ? 'Approve' : confirm.action === 'DISABLE' ? 'Disable' : 'Enable'
+        }
       />
+    </div>
+  )
+}
+
+function SummaryTile({
+  label,
+  value,
+  tone,
+}: {
+  label: string
+  value: number
+  tone: 'success' | 'warning' | 'error' | 'neutral'
+}) {
+  const toneClass = {
+    success: 'text-success-text',
+    warning: 'text-warning-text',
+    error: 'text-error-text',
+    neutral: 'text-primary',
+  }[tone]
+
+  return (
+    <div className="rounded-lg border border-border bg-surface p-3 shadow-sm">
+      <p className="text-caption font-medium uppercase tracking-wide text-tertiary">{label}</p>
+      <p className={`mt-1 text-h3 font-semibold ${toneClass}`}>{value}</p>
     </div>
   )
 }

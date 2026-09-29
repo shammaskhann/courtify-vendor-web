@@ -33,6 +33,7 @@ export type PricingType = (typeof PRICING_TYPES)[number]
 
 export const NOTIFICATION_TYPES = [
   'BOOKING_NEW', 'BOOKING_STATUS_CHANGE', 'DEAL_EXPIRING', 'VENUE_REVIEW', 'SYSTEM', 'PAYMENT_RECEIVED',
+  'CHAT', 'BOOKING', 'INFO', 'BROADCAST'
 ] as const
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number]
 
@@ -86,8 +87,8 @@ export interface Court {
   pricingType: PricingType
   images: string[]
   isDisabled: boolean
+  isApproved?: boolean
   createdAt: string
-  // CONSTANT pricing
   constantPriceOffPeak?: number
   constantPricePeak?: number | null
   // WEEKDAY_WEEKEND pricing
@@ -105,6 +106,10 @@ export interface Court {
   reviewCount?: number
   avgRating?: number
   latestReviews?: ReviewResponse[]
+  // Included on admin reads (GET /admin/courts/{id}). The venue shape has not
+  // been confirmed against AdminVenue, so it is not assumed complete.
+  venue?: Partial<AdminVenue>
+  activeDeals?: Deal[]
 }
 
 export interface Booking {
@@ -168,6 +173,25 @@ export interface Notification {
   relatedId: string | null
   relatedType: string | null
   createdAt: string
+  time?: string
+}
+
+export const CAMPAIGN_STATUSES = ['DRAFT', 'IN_PROGRESS', 'COMPLETED', 'FAILED'] as const
+export type CampaignStatus = (typeof CAMPAIGN_STATUSES)[number]
+
+export interface Campaign {
+  id: string | number
+  title: string
+  messageBody: string
+  targetAudience: 'ALL' | 'BY_CITY' | 'BY_RADIUS'
+  targetData?: any
+  additionalData?: Record<string, string>
+  status: CampaignStatus
+  totalRecipients?: number
+  sentCount?: number
+  failedCount?: number
+  createdAt: string
+  updatedAt?: string
 }
 
 // ---- Analytics ----
@@ -252,6 +276,11 @@ export interface AdminVenue {
   ownerEmail?: string
   contactNo?: string
   courts?: Court[]
+  venueImage?: string
+  image?: string
+  description?: string
+  amenities?: string[]
+  courtCount?: number
 }
 
 export interface CommonItem {

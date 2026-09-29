@@ -50,8 +50,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Derived routing logic based on user state
   const getRouteForUser = (vendor: VendorUser) => {
     if (vendor.role === 'ADMIN') return ROUTES.ADMIN_DASHBOARD
-    if (!vendor.isVerified) return ROUTES.VERIFY_OTP
-    if (!vendor.isApproved) return ROUTES.APPROVAL_PENDING
+    
+    const isVer = vendor.isVerified ?? (vendor as any).verified ?? true
+    const isApp = vendor.isApproved ?? (vendor as any).approved ?? true
+    
+    if (!isVer) return ROUTES.VERIFY_OTP
+    if (!isApp) return ROUTES.APPROVAL_PENDING
     return ROUTES.DASHBOARD
   }
 
@@ -81,8 +85,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         let newStatus: AuthStatus = 'authenticated'
         if (storedUser.role !== 'ADMIN') {
-          newStatus = !storedUser.isVerified ? 'authenticated-pending-verification'
-            : !storedUser.isApproved ? 'authenticated-pending-approval'
+          const isVer = storedUser.isVerified ?? (storedUser as any).verified ?? true
+          const isApp = storedUser.isApproved ?? (storedUser as any).approved ?? true
+          
+          newStatus = !isVer ? 'authenticated-pending-verification'
+            : !isApp ? 'authenticated-pending-approval'
             : 'authenticated'
         }
         
@@ -129,8 +136,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       let newStatus: AuthStatus = 'authenticated'
       if (fetchedUser.role !== 'ADMIN') {
-        newStatus = !fetchedUser.isVerified ? 'authenticated-pending-verification'
-          : !fetchedUser.isApproved ? 'authenticated-pending-approval'
+        const isVer = fetchedUser.isVerified ?? (fetchedUser as any).verified ?? true
+        const isApp = fetchedUser.isApproved ?? (fetchedUser as any).approved ?? true
+        
+        newStatus = !isVer ? 'authenticated-pending-verification'
+          : !isApp ? 'authenticated-pending-approval'
           : 'authenticated'
       }
         
@@ -218,8 +228,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(async () => {
     setIsLoading(true)
     try {
-      // await api.post('/auth/logout', {})
-      await new Promise(resolve => setTimeout(resolve, 500))
+      await api.post('/auth/logout', {})
     } catch {
       // ignore
     } finally {

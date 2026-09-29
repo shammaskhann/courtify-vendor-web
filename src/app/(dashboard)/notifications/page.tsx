@@ -9,8 +9,8 @@ import {
   getNotifications,
   markAsRead as markAsReadRequest,
   markAllAsRead as markAllAsReadRequest,
-  type AppNotification,
 } from '@/lib/api/notificationApi'
+import type { Notification as AppNotification } from '@/types/models'
 
 function getIcon(type: string) {
   switch (type) {

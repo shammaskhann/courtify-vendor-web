@@ -1,6 +1,7 @@
 import { authStorage } from './auth-storage'
 import { siteConfig } from '@/config/site'
 import type { ApiResponse } from '@/types/auth'
+import toast from 'react-hot-toast'
 
 // Single source of truth: NEXT_PUBLIC_API_BASE_URL when set (e.g. an ngrok
 // tunnel), otherwise the local backend on :4000.
@@ -80,6 +81,13 @@ async function fetchClient<T>(
       // If we are in the browser, trigger a custom event that the AuthContext can listen to
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new Event('auth:unauthorized'))
+      }
+    }
+
+    // Global 429 handler for rate limits
+    if (response.status === 429) {
+      if (typeof window !== 'undefined') {
+        toast.error("You are making too many requests. Please slow down.")
       }
     }
 

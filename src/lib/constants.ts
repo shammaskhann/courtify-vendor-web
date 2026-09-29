@@ -17,6 +17,7 @@ export const ROUTES = {
   ADMIN_VENUES: '/admin/venues',
   ADMIN_VENUE_DETAIL: (id: string) => `/admin/venues/${id}`,
   ADMIN_COURTS: '/admin/courts',
+  ADMIN_COURT_DETAIL: (id: string) => `/admin/courts/${id}`,
   ADMIN_USERS: '/admin/users',
   ADMIN_BOOKINGS: '/admin/bookings',
   ADMIN_MARKETPLACE: '/admin/marketplace',

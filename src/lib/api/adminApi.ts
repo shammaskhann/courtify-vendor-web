@@ -74,6 +74,24 @@ export async function getAdminCourtsByVenue(venueId: string | number): Promise<P
   }
 }
 
+/**
+ * Single-court read for admin surfaces. Requires the ADMIN role, so a 403 here
+ * means the session is not an admin — do not fall back to `/public/courts/{id}`,
+ * that would hide it.
+ *
+ * `api.get` only reports failures in its result, so `statusCode` is attached to
+ * the thrown error for the caller to branch on (404 → not found).
+ */
+export async function getAdminCourtById(id: string | number): Promise<Court> {
+  const res = await api.get<Court>(`/admin/courts/${id}`)
+  if (res.error) {
+    const err = new Error(res.error) as Error & { statusCode?: number }
+    err.statusCode = res.statusCode
+    throw err
+  }
+  return res.data as Court
+}
+
 export async function getPendingCourts(page = 0, size = 50): Promise<PaginatedResponse<Court>> {
   const res = await api.get<any>(`/admin/courts/pending?page=${page}&size=${size}`)
   if (res.error) throw new Error(res.error)

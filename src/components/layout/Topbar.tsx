@@ -1,12 +1,13 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { Bell, Menu, LogOut, Settings, KeyRound } from 'lucide-react'
+import { Menu, LogOut, Settings, KeyRound } from 'lucide-react'
 import { ThemeToggle } from '@/components/common/ThemeToggle'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/contexts/AuthContext'
 import Link from 'next/link'
 import { ROUTES } from '@/lib/constants'
+import { NotificationDropdown } from './NotificationDropdown'
 
 interface TopbarProps {
   onMenuToggle?: () => void
@@ -77,22 +78,7 @@ export function Topbar({ onMenuToggle, pageTitle, className }: TopbarProps) {
         <ThemeToggle variant="icon" />
 
         {/* Notifications */}
-        <button
-          className={cn(
-            'relative inline-flex items-center justify-center',
-            'h-10 w-10 rounded-md text-secondary hover:text-primary hover:bg-surface-variant',
-            'transition-all duration-base',
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand'
-          )}
-          aria-label="Notifications"
-        >
-          <Bell size={18} aria-hidden="true" />
-          {/* Unread badge */}
-          <span
-            className="absolute top-2 right-2 h-2 w-2 rounded-full bg-error"
-            aria-hidden="true"
-          />
-        </button>
+        <NotificationDropdown />
 
         {/* Profile Dropdown */}
         <div className="relative" ref={dropdownRef}>

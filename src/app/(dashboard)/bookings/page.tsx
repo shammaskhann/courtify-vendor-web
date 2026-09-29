@@ -171,12 +171,16 @@ export default function BookingsPage() {
     },
     {
       header: 'Venue & Court',
-      render: (booking: Booking) => (
-        <div className="flex flex-col">
-          <span className="font-medium text-primary">{booking.venueName || `Venue #${booking.venueId || 'Unknown'}`}</span>
-          <span className="text-caption text-secondary">{booking.courtName || `Court #${booking.courtId || 'Unknown'}`}</span>
-        </div>
-      ),
+      render: (booking: Booking) => {
+        const displayString = booking.courtName || booking.venueName || `Court #${booking.courtId || 'Unknown'}`;
+        return (
+          <div className="flex items-center max-w-[250px]">
+            <span className="font-medium text-primary truncate" title={displayString}>
+              {displayString}
+            </span>
+          </div>
+        );
+      },
     },
     {
       header: 'Date & Time',

@@ -21,7 +21,9 @@ const statusMap: Record<string, { label: string; className: string }> = {
   // General Statuses
   ACTIVE: { label: 'Active', className: 'bg-success-bg text-success-text' },
   INACTIVE: { label: 'Inactive', className: 'bg-surface-variant text-secondary' },
+  DISABLED: { label: 'Disabled', className: 'bg-error-bg text-error-text' },
   DRAFT: { label: 'Draft', className: 'bg-warning-bg text-warning-text' },
+  IN_PROGRESS: { label: 'In Progress', className: 'bg-brand/10 text-brand' },
   
   // Marketplace Statuses
   SOLD: { label: 'Sold', className: 'bg-info-bg text-info-text' },
