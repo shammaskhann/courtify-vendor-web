@@ -133,11 +133,19 @@ export default function DealsPage() {
     },
     {
       header: 'Discount',
-      render: (deal: Deal) => (
-        <span className="text-body-sm font-medium">
-          {deal.dealType === 'PERCENTAGE_OFF' ? `${deal.dealValue}% OFF` : `PKR ${deal.dealValue} OFF`}
-        </span>
-      ),
+      render: (deal: Deal) => {
+        let valueDisplay = `PKR ${deal.dealValue || 0} OFF`;
+        if (deal.dealType === 'PERCENTAGE_OFF' || (deal.dealType as string) === 'PERCENTAGE') {
+          valueDisplay = `${deal.dealValue || 0}% OFF`;
+        } else if (deal.dealType === 'BUY_X_GET_Y') {
+          valueDisplay = `Buy ${deal.buyQuantity || 'X'} Get ${deal.getFreeQuantity || 'Y'} Free`;
+        }
+        return (
+          <span className="text-body-sm font-medium">
+            {valueDisplay}
+          </span>
+        );
+      },
     },
     {
       header: 'Usage',

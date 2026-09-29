@@ -142,9 +142,10 @@ export interface Booking {
 
 export interface Deal {
   id: string
-  venueId: string | number
+  venueId: string | number | null
   applyOnAllCourts: boolean
   courtIds: (string | number)[]
+  courtId?: string | null
   name: string
   dealType: DealType
   dealValue: number
@@ -161,13 +162,6 @@ export interface Deal {
   priority: number
   isActive: boolean
   isStackable: boolean
-  isActive: boolean
-  venueId: string | null
-  courtId: string | null
-  startTime: string | null
-  endTime: string | null
-  buyQuantity: number | null
-  getQuantity: number | null
   createdAt: string
 }
 
