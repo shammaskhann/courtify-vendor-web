@@ -18,7 +18,7 @@ export default function DealsPage() {
   const [deals, setDeals] = useState<Deal[]>([])
   const [total, setTotal] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
-  
+
   // Pagination & Filtering
   const [page, setPage] = useState(1)
   const [filters, setFilters] = useState<Record<string, any>>({})
@@ -27,7 +27,7 @@ export default function DealsPage() {
   // Modals & Forms
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [editingDeal, setEditingDeal] = useState<Deal | null>(null)
-  
+
   const [dealToDelete, setDealToDelete] = useState<string | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
 
@@ -133,34 +133,10 @@ export default function DealsPage() {
     },
     {
       header: 'Discount',
-      render: (deal: Deal) => {
-        let valueDisplay = `PKR ${deal.dealValue || 0} OFF`;
-        if (deal.dealType === 'PERCENTAGE_OFF' || deal.dealType === 'PERCENTAGE') {
-          valueDisplay = `${deal.dealValue || 0}% OFF`;
-        } else if (deal.dealType === 'BUY_X_GET_Y') {
-          valueDisplay = `Buy ${deal.buyQuantity || 'X'} Get ${deal.getFreeQuantity || 'Y'} Free`;
-        }
-        return (
-          <span className="text-body-sm font-medium">
-            {valueDisplay}
-          </span>
-        );
-      },
-    },
-    {
-      header: 'Courts',
       render: (deal: Deal) => (
-        <div className="flex items-center gap-2">
-          {deal.applyOnAllCourts ? (
-            <span className="px-2 py-0.5 rounded text-caption font-medium bg-brand/10 text-brand border border-brand/20">
-              All Courts
-            </span>
-          ) : (
-            <span className="px-2 py-0.5 rounded text-caption font-medium bg-surface-variant text-secondary border border-border">
-              {deal.courtIds?.length || 0} Selected
-            </span>
-          )}
-        </div>
+        <span className="text-body-sm font-medium">
+          {deal.dealType === 'PERCENTAGE_OFF' ? `${deal.dealValue}% OFF` : `PKR ${deal.dealValue} OFF`}
+        </span>
       ),
     },
     {
@@ -169,7 +145,7 @@ export default function DealsPage() {
         const uses = deal.usesCount || 0
         const max = deal.maxUses || 1
         const pct = Math.min((uses / max) * 100, 100)
-        
+
         return (
           <div className="flex flex-col">
             <div className="flex items-center gap-2 mb-1 text-caption text-secondary">
@@ -178,7 +154,7 @@ export default function DealsPage() {
             </div>
             {deal.maxUses && (
               <div className="w-24 h-1.5 bg-surface-variant rounded-pill overflow-hidden">
-                <div 
+                <div
                   className="h-full bg-brand transition-all duration-500"
                   style={{ width: `${pct}%` }}
                 />
@@ -208,9 +184,9 @@ export default function DealsPage() {
       align: 'right' as const,
       render: (deal: Deal) => (
         <div className="flex justify-end gap-2">
-          <Button 
-            variant="ghost" 
-            size="icon" 
+          <Button
+            variant="ghost"
+            size="icon"
             className={`h-8 w-8 ${deal.isActive ? 'text-success hover:bg-success-bg' : 'text-secondary hover:text-primary'}`}
             onClick={() => handleToggleStatus(deal.id)}
             title={deal.isActive ? "Deactivate Deal" : "Activate Deal"}
@@ -245,10 +221,12 @@ export default function DealsPage() {
         configs={[
           { key: 'search', label: 'Search', type: 'search', placeholder: 'Search code or name...' },
           { key: 'status', label: 'Status', type: 'select', options: [{ label: 'Active', value: 'ACTIVE' }, { label: 'Inactive', value: 'INACTIVE' }] },
-          { key: 'dealType', label: 'Type', type: 'select', options: [
-            { label: 'Percentage Off', value: 'PERCENTAGE_OFF' },
-            { label: 'Flat Off', value: 'FLAT_OFF' },
-          ]},
+          {
+            key: 'dealType', label: 'Type', type: 'select', options: [
+              { label: 'Percentage Off', value: 'PERCENTAGE_OFF' },
+              { label: 'Flat Off', value: 'FLAT_OFF' },
+            ]
+          },
         ]}
         onFilterChange={handleFilterChange}
       />

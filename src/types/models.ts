@@ -161,7 +161,14 @@ export interface Deal {
   priority: number
   isActive: boolean
   isStackable: boolean
-  createdAt?: string
+  isActive: boolean
+  venueId: string | null
+  courtId: string | null
+  startTime: string | null
+  endTime: string | null
+  buyQuantity: number | null
+  getQuantity: number | null
+  createdAt: string
 }
 
 export interface Notification {
